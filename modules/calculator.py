@@ -134,3 +134,39 @@ def build_sell_plan(
         })
 
     return plan
+
+
+def calculate_trade_plan(
+    high_price: int,
+    low_price: int,
+    holding_qty: int = 0,
+    buy_budget: int = 0,
+    split_count: int = 3,
+    mode: DistributionMode = "equal",
+) -> Dict:
+    """매수/매도 통합 매매 계획 생성"""
+    hdr = calculate_hdr_range(high_price, low_price)
+    result: Dict = {"hdr": hdr, "buy_plan": None, "sell_plan": None, "summary": {}}
+
+    if buy_budget > 0:
+        result["buy_plan"] = build_buy_plan(high_price, low_price, buy_budget, split_count, mode)
+        total_buy_qty = sum(p["qty"] for p in result["buy_plan"])
+        total_buy_amt = sum(p["expected_amount"] for p in result["buy_plan"])
+        avg_buy_price = round(total_buy_amt / total_buy_qty) if total_buy_qty else 0
+        result["summary"]["buy"] = {
+            "total_qty": total_buy_qty,
+            "total_amount": total_buy_amt,
+            "avg_price": avg_buy_price,
+        }
+
+    if holding_qty > 0:
+        result["sell_plan"] = build_sell_plan(high_price, low_price, holding_qty, split_count, mode)
+        total_sell_amt = sum(p["expected_amount"] for p in result["sell_plan"])
+        avg_sell_price = round(total_sell_amt / holding_qty)
+        result["summary"]["sell"] = {
+            "total_qty": holding_qty,
+            "total_amount": total_sell_amt,
+            "avg_price": avg_sell_price,
+        }
+
+    return result
