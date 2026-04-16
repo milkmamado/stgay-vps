@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 STGAY - 주식 분석기</title>
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --surface: #12121a;
+            --border: #1e1e2e;
+            --text: #e0e0e0;
+            --text-dim: #888;
+            --text-muted: #555;
+            --accent: #6c5ce7;
+            --purple: #7b61ff;
+            --blue: #74b9ff;
+            --green: #00b894;
+            --yellow: #fdcb6e;
+            --red: #e17055;
+            --gold: #ffd700;
+            --silver: #c0c0c0;
+            --bronze: #cd7f32;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { background:var(--bg); color:var(--text); font-family:'Segoe UI','Noto Sans KR',sans-serif; min-height:100vh; }
+
+        .navbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--border); }
+        .navbar-brand { font-size:18px; font-weight:800; }
+        .navbar-brand span { color:var(--green); }
+        .navbar-right { display:flex; align-items:center; gap:12px; }
+        .badge { display:none; background:var(--accent); color:#fff; font-size:11px; padding:3px 10px; border-radius:12px; }
+        .btn-small { background:none; border:1px solid var(--border); color:var(--text-dim); padding:4px 12px; border-radius:6px; cursor:pointer; font-size:12px; }
+        .btn-small:hover { border-color:var(--accent); color:var(--accent); }
+        .btn-logout:hover { border-color:var(--red); color:var(--red); }
+
+        .start-section { padding:16px 20px; }
+        .btn-start { width:100%; padding:14px; background:var(--accent); color:#fff; border:none; border-radius:10px; font-size:16px; font-weight:700; cursor:pointer; transition:all 0.2s; }
+        .btn-start:hover { background:#5a4bd1; }
+        .btn-start:disabled { opacity:0.6; cursor:not-allowed; }
+
+        .progress-section { display:none; padding:0 20px 16px; }
+        .progress-bar-bg { background:var(--border); border-radius:6px; height:8px; overflow:hidden; }
+        .progress-fill { height:100%; background:linear-gradient(90deg, var(--accent), var(--green)); width:0%; transition:width 0.3s; border-radius:6px; }
+        .progress-label { font-size:12px; color:var(--text-dim); margin-top:6px; text-align:center; }
+
+        .container { max-width:900px; margin:0 auto; padding:0 20px 40px; }
+
+        .stats-row { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:20px 0; }
+        .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:16px; text-align:center; }
+        .stat-value { font-size:24px; font-weight:800; color:var(--accent); }
+        .stat-label { font-size:11px; color:var(--text-dim); margin-top:4px; }
+
+        .section { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:20px; margin-bottom:16px; }
+        .section-title { font-size:16px; font-weight:700; margin-bottom:12px; }
+
+        .top3-card { background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:14px; transition:border-color 0.2s; }
+        .top3-card:hover { border-color:var(--accent); }
+        .top3-card.rank-1 { border-left:4px solid var(--gold); }
+        .top3-card.rank-2 { border-left:4px solid var(--silver); }
+        .top3-card.rank-3 { border-left:4px solid var(--bronze); }
+
+        .card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:8px; }
+        .card-left { display:flex; align-items:center; gap:10px; }
+        .rank-badge { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:16px; }
+        .rank-badge.r1 { background:linear-gradient(135deg, #ffd700, #ffaa00); color:#000; }
+        .rank-badge.r2 { background:linear-gradient(135deg, #e0e0e0, #a0a0a0); color:#000; }
+        .rank-badge.r3 { background:linear-gradient(135deg, #cd7f32, #a0622e); color:#fff; }
+        .stock-name { font-size:17px; font-weight:700; }
+        .stock-code { font-size:12px; color:var(--text-dim); margin-left:4px; }
+        .theme-tag { display:inline-block; background:rgba(123,97,255,0.15); color:var(--purple); font-size:11px; padding:2px 8px; border-radius:4px; margin-top:3px; }
+
+        .confidence { text-align:right; }
+        .conf-value { font-size:20px; font-weight:800; }
+        .conf-label { font-size:10px; color:var(--text-dim); }
+        .conf-bar { width:70px; height:5px; background:#222; border-radius:3px; margin-top:3px; }
+        .conf-fill { height:100%; border-radius:3px; }
+
+        .summary-text { color:var(--text-dim); font-size:13px; line-height:1.7; margin-bottom:14px; padding:10px; background:rgba(255,255,255,0.02); border-radius:8px; }
+
+        .reasons-title { font-size:12px; color:var(--yellow); font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; }
+        .reason-item { font-size:12px; color:var(--text-dim); padding:3px 0 3px 14px; position:relative; line-height:1.5; }
+        .reason-item::before { content:'•'; position:absolute; left:0; color:var(--accent); }
+
+        .plan-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin:12px 0; }
+        .plan-item { background:rgba(255,255,255,0.03); border-radius:6px; padding:8px; text-align:center; }
+        .plan-label { font-size:10px; color:var(--text-dim); margin-bottom:2px; }
+        .plan-value { font-size:13px; font-weight:600; }
+
+        .risk-item { display:flex; align-items:flex-start; gap:6px; margin-bottom:6px; }
+        .risk-sev { font-size:9px; font-weight:700; padding:2px 6px; border-radius:3px; flex-shrink:0; margin-top:1px; }
+        .sev-high { background:var(--red); color:#fff; }
+        .sev-medium { background:var(--yellow); color:#000; }
+        .sev-low { background:var(--green); color:#fff; }
+        .risk-text { font-size:12px; color:var(--text-dim); }
+        .risk-miti { font-size:11px; color:var(--accent); margin-top:1px; }
+
+        .catalyst-item { font-size:12px; color:var(--text-dim); padding:3px 0 3px 20px; position:relative; }
+        .catalyst-item::before { content:'🚀'; position:absolute; left:0; font-size:10px; }
+
+        .verdict-box { margin-top:12px; padding:10px; background:rgba(108,92,231,0.08); border-left:3px solid var(--accent); border-radius:0 8px 8px 0; font-size:13px; font-weight:600; }
+
+        .sub-title { font-size:13px; font-weight:700; margin:12px 0 6px; }
+
+        .extra-content { font-size:13px; color:var(--text-dim); line-height:1.8; white-space:pre-wrap; }
+
+        .theme-row { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border); font-size:13px; }
+        .theme-row:last-child { border-bottom:none; }
+        .theme-rank { color:var(--accent); font-weight:700; min-width:28px; }
+        .theme-name { flex:1; }
+        .theme-count { color:var(--text-dim); font-size:12px; }
+
+        .empty-state { text-align:center; padding:40px 20px; color:var(--text-dim); }
+        .empty-state h2 { margin-bottom:8px; color:var(--text); }
+
+        .error-box { background:#1a0a0a; border:1px solid var(--red); border-radius:10px; padding:16px; text-align:center; margin:16px 0; }
+
+        .chart-container { margin:14px 0; background:rgba(0,0,0,0.3); border-radius:8px; padding:10px; }
+        .chart-container canvas { width:100%; height:200px; }
+
+        .footer { text-align:center; padding:30px 0; color:var(--text-muted); font-size:11px; }
+
+        @media(max-width:600px) {
+            .plan-grid { grid-template-columns:repeat(2,1fr); }
+            .stats-row { grid-template-columns:1fr; }
+            .card-header { flex-direction:column; align-items:flex-start; }
+            .confidence { text-align:left; }
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div>
+            <span class="navbar-brand">ST<span>GAY</span></span>
+            <span id="statusBadge" class="badge"></span>
+        </div>
+        <div class="navbar-right">
+            <button id="downloadBtn" class="btn-small" style="display:none" onclick="downloadHTML()">📥 HTML 저장</button>
+            <button class="btn-small btn-logout" onclick="location.href='/stgay/logout'">로그아웃</button>
+        </div>
+    </div>
+
+    <div class="start-section">
+        <button id="startBtn" class="btn-start" onclick="startAnalysis()">🔍 스윙 분석 시작</button>
+    </div>
+
+    <div id="progressSection" class="progress-section">
+        <div class="progress-bar-bg"><div id="progressFill" class="progress-fill"></div></div>
+        <div id="progressPhase" class="progress-label"></div>
+    </div>
+
+    <div id="resultArea" class="container"></div>
+
+    <script>
+    let pollTimer = null;
+    let lastResultData = null;
+
+    function esc(str) {
+        if (!str) return '';
+        const d = document.createElement('div');
+        d.textContent = String(str);
+        return d.innerHTML;
+    }
+
+    function startAnalysis() {
+        const btn = document.getElementById('startBtn');
+        btn.disabled = true;
+        btn.textContent = '분석 진행 중...';
+        document.getElementById('progressSection').style.display = 'block';
+        document.getElementById('resultArea').innerHTML = '';
+        document.getElementById('downloadBtn').style.display = 'none';
+
+        fetch('/stgay/api/start', { method: 'POST' })
+            .then(r => r.json())
+            .then(() => { pollTimer = setInterval(pollStatus, 1500); })
+            .catch(e => {
+                btn.disabled = false;
+                btn.textContent = '🔍 스윙 분석 시작';
+                alert('시작 실패: ' + e);
+            });
+    }
+
+    function pollStatus() {
+        fetch('/stgay/api/status').then(r => r.json()).then(data => {
+            document.getElementById('progressPhase').textContent = data.phase || '';
+            document.getElementById('progressFill').style.width = (data.percent || 0) + '%';
+
+            const badge = document.getElementById('statusBadge');
+            if (data.running) {
+                badge.style.display = 'inline';
+                badge.textContent = data.phase;
+            }
+
+            if (!data.running) {
+                clearInterval(pollTimer);
+                badge.style.display = 'none';
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('startBtn').textContent = '🔍 스윙 분석 시작';
+                document.getElementById('progressSection').style.display = 'none';
+
+                if (data.has_result) {
+                    fetch('/stgay/api/result').then(r => r.json()).then(renderDashboard);
+                } else if (data.error) {
+                    document.getElementById('resultArea').innerHTML =
+                        '<div class="error-box"><h2>❌ 오류</h2><p style="margin-top:8px;color:var(--text-dim)">' + esc(data.error) + '</p></div>';
+                }
+            }
+        });
+    }
+
+    // ===== 캔들스틱 차트 =====
+    function drawCandleChart(canvasId, prices) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas || !prices || prices.length === 0) return;
+        const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.parentElement.getBoundingClientRect();
+        const W = rect.width - 20;
+        const H = 200;
+        canvas.width = W * dpr;
+        canvas.height = H * dpr;
+        canvas.style.width = W + 'px';
+        canvas.style.height = H + 'px';
+        ctx.scale(dpr, dpr);
+
+        const data = prices.slice(-40); // 최근 40일
+        const highs = data.map(d => d.high);
+        const lows = data.map(d => d.low);
+        const maxP = Math.max(...highs);
+        const minP = Math.min(...lows);
+        const range = maxP - minP || 1;
+        const pad = { top: 10, bottom: 25, left: 60, right: 10 };
+        const cw = (W - pad.left - pad.right) / data.length;
+
+        function y(price) { return pad.top + (1 - (price - minP) / range) * (H - pad.top - pad.bottom); }
+
+        // Background grid
+        ctx.strokeStyle = '#1e1e2e';
+        ctx.lineWidth = 0.5;
+        for (let i = 0; i <= 4; i++) {
+            const py = pad.top + i * (H - pad.top - pad.bottom) / 4;
+            ctx.beginPath(); ctx.moveTo(pad.left, py); ctx.lineTo(W - pad.right, py); ctx.stroke();
+            const price = maxP - (i / 4) * range;
+            ctx.fillStyle = '#666';
+            ctx.font = '10px monospace';
+            ctx.textAlign = 'right';
+            ctx.fillText(price >= 10000 ? (price/10000).toFixed(1)+'만' : price.toLocaleString(), pad.left - 5, py + 3);
+        }
+
+        // Volume bars (subtle)
+        const maxVol = Math.max(...data.map(d => d.volume || 0)) || 1;
+        data.forEach((d, i) => {
+            const vx = pad.left + i * cw + cw * 0.15;
+            const vw = cw * 0.7;
+            const vh = (d.volume / maxVol) * 30;
+            ctx.fillStyle = d.close >= d.open ? 'rgba(0,184,148,0.15)' : 'rgba(225,112,85,0.15)';
+            ctx.fillRect(vx, H - pad.bottom - vh, vw, vh);
+        });
+
+        // Candles
+        data.forEach((d, i) => {
+            const x = pad.left + i * cw;
+            const mid = x + cw / 2;
+            const isUp = d.close >= d.open;
+            const color = isUp ? '#00b894' : '#e17055';
+
+            // Wick
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(mid, y(d.high));
+            ctx.lineTo(mid, y(d.low));
+            ctx.stroke();
+
+            // Body
+            const bodyTop = y(Math.max(d.open, d.close));
+            const bodyBot = y(Math.min(d.open, d.close));
+            const bodyH = Math.max(bodyBot - bodyTop, 1);
+            ctx.fillStyle = color;
+            ctx.fillRect(x + cw * 0.15, bodyTop, cw * 0.7, bodyH);
+        });
+
+        // Date labels
+        ctx.fillStyle = '#555';
+        ctx.font = '9px sans-serif';
+        ctx.textAlign = 'center';
+        [0, Math.floor(data.length/2), data.length-1].forEach(i => {
+            if (data[i]) {
+                const dt = data[i].date;
+                const label = dt.substring(4,6) + '/' + dt.substring(6,8);
+                ctx.fillText(label, pad.left + i * cw + cw/2, H - 5);
+            }
+        });
+    }
+
+    function renderDashboard(data) {
+        const el = document.getElementById('resultArea');
+        lastResultData = data;
+        document.getElementById('downloadBtn').style.display = 'inline';
+
+        const ai = data.ai_analysis || {};
+        const top3 = Array.isArray(ai.top3) ? ai.top3 : (ai.top3 && ai.top3.top3 ? ai.top3.top3 : []);
+        const themes = data.themes || [];
+        const techMap = data.tech_analysis || {};
+        const allStocks = Object.values(techMap);
+        const marketCtx = ai.market_context || '';
+        const strategyNote = ai.strategy_note || '';
+        const caution = ai.caution || '';
+        const newsFlow = ai.news_flow || {};
+
+        let html = '';
+
+        // Stats
+        html += '<div class="stats-row">';
+        html += '<div class="stat-card"><div class="stat-value">' + allStocks.length + '</div><div class="stat-label">분석 종목</div></div>';
+        html += '<div class="stat-card"><div class="stat-value">' + top3.length + '</div><div class="stat-label">TOP 추천</div></div>';
+        html += '<div class="stat-card"><div class="stat-value">' + themes.length + '</div><div class="stat-label">테마</div></div>';
+        html += '</div>';
+
+        // Themes
+        if (themes.length > 0) {
+            html += '<div class="section"><div class="section-title">🏷️ 테마 랭킹</div>';
+            themes.slice(0, 10).forEach((t, i) => {
+                html += '<div class="theme-row"><span class="theme-rank">#' + (i+1) + '</span><span class="theme-name">' + esc(t.theme || t.name) + '</span><span class="theme-count">' + (t.count || t.stock_count || '') + '종목</span></div>';
+            });
+            html += '</div>';
+        }
+
+        // Market Context
+        if (marketCtx) {
+            html += '<div class="section"><div class="section-title">🌍 시장 컨텍스트</div><div class="extra-content">' + esc(marketCtx) + '</div></div>';
+        }
+
+        // Strategy
+        if (strategyNote) {
+            html += '<div class="section"><div class="section-title">📝 전략 노트</div><div class="extra-content">' + esc(strategyNote) + '</div></div>';
+        }
+
+        // TOP3
+        html += '<div class="section"><div class="section-title">👑 AI TOP 3 추천</div>';
+
+        if (top3.length === 0) {
+            html += '<div class="empty-state"><h2>추천 종목 없음</h2><p>분석이 완료되면 여기에 표시됩니다.</p></div>';
+        } else {
+            top3.forEach((item, idx) => {
+                const rank = item.rank || (idx + 1);
+                const plan = item.entry_plan || {};
+                const conf = item.confidence || 0;
+                const confColor = conf >= 80 ? 'var(--green)' : conf >= 60 ? 'var(--yellow)' : 'var(--red)';
+                const chartId = 'chart-' + (item.code || idx);
+
+                html += '<div class="top3-card rank-' + rank + '">';
+
+                // Header
+                html += '<div class="card-header">';
+                html += '<div class="card-left">';
+                html += '<div class="rank-badge r' + rank + '">' + rank + '</div>';
+                html += '<div><span class="stock-name">' + esc(item.name) + '</span><span class="stock-code">' + esc(item.code) + '</span>';
+                if (item.theme) html += '<br><span class="theme-tag">' + esc(item.theme) + '</span>';
+                html += '</div></div>';
+                html += '<div class="confidence"><div class="conf-value" style="color:' + confColor + '">' + conf + '%</div>';
+                html += '<div class="conf-label">신뢰도</div>';
+                html += '<div class="conf-bar"><div class="conf-fill" style="width:' + conf + '%;background:' + confColor + '"></div></div>';
+                html += '</div></div>';
+
+                // Chart
+                html += '<div class="chart-container"><canvas id="' + chartId + '"></canvas></div>';
+
+                // Summary
+                if (item.summary) {
+                    html += '<div class="summary-text">' + esc(item.summary) + '</div>';
+                }
+
+                // Reasons
+                if (item.reasons && item.reasons.length) {
+                    html += '<div class="reasons-title">📋 선정 근거</div>';
+                    item.reasons.forEach(r => {
+                        html += '<div class="reason-item">' + esc(r) + '</div>';
+                    });
+                }
+
+                // Entry Plan
+                if (plan.entry_price || plan.target_price || plan.stop_loss) {
+                    html += '<div class="plan-grid">';
+                    html += '<div class="plan-item"><div class="plan-label">진입가</div><div class="plan-value">' + esc(plan.entry_price || '-') + '</div></div>';
+                    html += '<div class="plan-item"><div class="plan-label">목표가</div><div class="plan-value">' + esc(plan.target_price || '-') + '</div></div>';
+                    html += '<div class="plan-item"><div class="plan-label">손절가</div><div class="plan-value">' + esc(plan.stop_loss || '-') + '</div></div>';
+                    html += '<div class="plan-item"><div class="plan-label">예상 수익</div><div class="plan-value">' + esc(plan.expected_return || '-') + '</div></div>';
+                    html += '<div class="plan-item"><div class="plan-label">손익비</div><div class="plan-value">' + esc(plan.risk_reward || '-') + '</div></div>';
+                    html += '<div class="plan-item"><div class="plan-label">보유 기간</div><div class="plan-value">' + esc(plan.holding_period || '-') + '</div></div>';
+                    html += '</div>';
+                }
+
+                // Risks
+                if (item.risks && item.risks.length) {
+                    html += '<div class="sub-title">⚠️ 리스크</div>';
+                    item.risks.forEach(r => {
+                        const sev = (r.severity || 'medium').toLowerCase();
+                        html += '<div class="risk-item">';
+                        html += '<span class="risk-sev sev-' + sev + '">' + sev.toUpperCase() + '</span>';
+                        html += '<div><div class="risk-text">' + esc(r.factor) + '</div>';
+                        if (r.mitigation) html += '<div class="risk-miti">→ ' + esc(r.mitigation) + '</div>';
+                        html += '</div></div>';
+                    });
+                }
+
+                // Catalysts
+                if (item.catalysts && item.catalysts.length) {
+                    html += '<div class="sub-title">🚀 향후 촉매제</div>';
+                    item.catalysts.forEach(c => {
+                        const text = typeof c === 'string' ? c : (c.event || c.catalyst || JSON.stringify(c));
+                        html += '<div class="catalyst-item">' + esc(text) + '</div>';
+                    });
+                }
+
+                // Verdict
+                if (item.verdict) {
+                    html += '<div class="verdict-box">💡 ' + esc(item.verdict) + '</div>';
+                }
+
+                html += '</div>'; // close top3-card
+            });
+        }
+        html += '</div>'; // close section
+
+        // Caution
+        if (caution) {
+            html += '<div class="section"><div class="section-title">⚠️ 주의사항</div><div class="extra-content">' + esc(caution) + '</div></div>';
+        }
+
+        // News
+        if (newsFlow.summary) {
+            html += '<div class="section"><div class="section-title">📰 뉴스 흐름</div><div class="extra-content">' + esc(newsFlow.summary) + '</div></div>';
+        }
+
+        // Footer
+        html += '<div class="footer"><p>⚠️ 본 분석은 AI 기반 참고 자료이며, 투자 결정은 본인의 판단에 따라 이루어져야 합니다.</p><p style="margin-top:4px">PigeonAI Stock Analyzer © 2025</p></div>';
+
+        el.innerHTML = html;
+
+        // Draw charts after DOM update
+        setTimeout(() => {
+            top3.forEach((item, idx) => {
+                const code = item.code || '';
+                const chartId = 'chart-' + (code || idx);
+                // Find matching stock in tech_analysis by code or name
+                let stockData = null;
+                for (const key in techMap) {
+                    const s = techMap[key];
+                    if (s.code === code || s.name === item.name) {
+                        stockData = s;
+                        break;
+                    }
+                }
+                if (stockData && stockData.prices) {
+                    drawCandleChart(chartId, stockData.prices);
+                }
+            });
+        }, 100);
+    }
+
+    // ===== HTML 다운로드 =====
+    function downloadHTML() {
+        if (!lastResultData) return alert('다운로드할 데이터가 없습니다.');
+
+        const ai = lastResultData.ai_analysis || {};
+        const top3 = Array.isArray(ai.top3) ? ai.top3 : (ai.top3 && ai.top3.top3 ? ai.top3.top3 : []);
+        const themes = lastResultData.themes || [];
+        const techMap = lastResultData.tech_analysis || {};
+        const allStocks = Object.values(techMap);
+        const marketCtx = ai.market_context || '';
+        const strategyNote = ai.strategy_note || '';
+        const caution = ai.caution || '';
+        const newsFlow = ai.news_flow || {};
+        const ts = lastResultData.timestamp || new Date().toISOString().slice(0,10);
+
+        // Convert all charts to data URLs
+        const chartImages = {};
+        top3.forEach((item, idx) => {
+            const code = item.code || '';
+            const chartId = 'chart-' + (code || idx);
+            const canvas = document.getElementById(chartId);
+            if (canvas) {
+                try { chartImages[chartId] = canvas.toDataURL('image/png'); } catch(e) {}
+            }
+        });
+
+        let h = '<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">';
+        h += '<title>STGAY 분석 리포트 - ' + esc(ts) + '</title>';
+        h += '<style>';
+        h += document.querySelector('style').textContent;
+        h += '.chart-img { width:100%; border-radius:8px; }';
+        h += '</style></head><body style="background:var(--bg);color:var(--text);font-family:Segoe UI,Noto Sans KR,sans-serif;">';
+        h += '<div style="max-width:900px;margin:0 auto;padding:20px;">';
+        h += '<h1 style="text-align:center;margin-bottom:6px;">📊 STGAY 분석 리포트</h1>';
+        h += '<p style="text-align:center;color:var(--text-dim);font-size:13px;margin-bottom:20px;">' + esc(ts) + '</p>';
+
+        // Stats
+        h += '<div class="stats-row">';
+        h += '<div class="stat-card"><div class="stat-value">' + allStocks.length + '</div><div class="stat-label">분석 종목</div></div>';
+        h += '<div class="stat-card"><div class="stat-value">' + top3.length + '</div><div class="stat-label">TOP 추천</div></div>';
+        h += '<div class="stat-card"><div class="stat-value">' + themes.length + '</div><div class="stat-label">테마</div></div>';
+        h += '</div>';
+
+        // Themes
+        if (themes.length > 0) {
+            h += '<div class="section"><div class="section-title">🏷️ 테마 랭킹</div>';
+            themes.slice(0, 10).forEach((t, i) => {
+                h += '<div class="theme-row"><span class="theme-rank">#' + (i+1) + '</span><span class="theme-name">' + esc(t.theme || t.name) + '</span><span class="theme-count">' + (t.count || t.stock_count || '') + '종목</span></div>';
+            });
+            h += '</div>';
+        }
+
+        if (marketCtx) h += '<div class="section"><div class="section-title">🌍 시장 컨텍스트</div><div class="extra-content">' + esc(marketCtx) + '</div></div>';
+        if (strategyNote) h += '<div class="section"><div class="section-title">📝 전략 노트</div><div class="extra-content">' + esc(strategyNote) + '</div></div>';
+
+        // TOP3
+        h += '<div class="section"><div class="section-title">👑 AI TOP 3 추천</div>';
+        top3.forEach((item, idx) => {
+            const rank = item.rank || (idx + 1);
+            const plan = item.entry_plan || {};
+            const conf = item.confidence || 0;
+            const confColor = conf >= 80 ? '#00b894' : conf >= 60 ? '#fdcb6e' : '#e17055';
+            const chartId = 'chart-' + (item.code || idx);
+
+            h += '<div class="top3-card rank-' + rank + '">';
+            h += '<div class="card-header"><div class="card-left"><div class="rank-badge r' + rank + '">' + rank + '</div><div><span class="stock-name">' + esc(item.name) + '</span><span class="stock-code">' + esc(item.code) + '</span>';
+            if (item.theme) h += '<br><span class="theme-tag">' + esc(item.theme) + '</span>';
+            h += '</div></div><div class="confidence"><div class="conf-value" style="color:' + confColor + '">' + conf + '%</div><div class="conf-label">신뢰도</div></div></div>';
+
+            // Chart image
+            if (chartImages[chartId]) {
+                h += '<div class="chart-container"><img class="chart-img" src="' + chartImages[chartId] + '" /></div>';
+            }
+
+            if (item.summary) h += '<div class="summary-text">' + esc(item.summary) + '</div>';
+
+            if (item.reasons && item.reasons.length) {
+                h += '<div class="reasons-title">📋 선정 근거</div>';
+                item.reasons.forEach(r => { h += '<div class="reason-item">' + esc(r) + '</div>'; });
+            }
+
+            if (plan.entry_price || plan.target_price) {
+                h += '<div class="plan-grid">';
+                h += '<div class="plan-item"><div class="plan-label">진입가</div><div class="plan-value">' + esc(plan.entry_price || '-') + '</div></div>';
+                h += '<div class="plan-item"><div class="plan-label">목표가</div><div class="plan-value">' + esc(plan.target_price || '-') + '</div></div>';
+                h += '<div class="plan-item"><div class="plan-label">손절가</div><div class="plan-value">' + esc(plan.stop_loss || '-') + '</div></div>';
+                h += '<div class="plan-item"><div class="plan-label">예상 수익</div><div class="plan-value">' + esc(plan.expected_return || '-') + '</div></div>';
+                h += '<div class="plan-item"><div class="plan-label">손익비</div><div class="plan-value">' + esc(plan.risk_reward || '-') + '</div></div>';
+                h += '<div class="plan-item"><div class="plan-label">보유 기간</div><div class="plan-value">' + esc(plan.holding_period || '-') + '</div></div>';
+                h += '</div>';
+            }
+
+            if (item.risks && item.risks.length) {
+                h += '<div class="sub-title">⚠️ 리스크</div>';
+                item.risks.forEach(r => {
+                    const sev = (r.severity || 'medium').toLowerCase();
+                    h += '<div class="risk-item"><span class="risk-sev sev-' + sev + '">' + sev.toUpperCase() + '</span><div><div class="risk-text">' + esc(r.factor) + '</div>';
+                    if (r.mitigation) h += '<div class="risk-miti">→ ' + esc(r.mitigation) + '</div>';
+                    h += '</div></div>';
+                });
+            }
+
+            if (item.catalysts && item.catalysts.length) {
+                h += '<div class="sub-title">🚀 향후 촉매제</div>';
+                item.catalysts.forEach(c => {
+                    const text = typeof c === 'string' ? c : (c.event || c.catalyst || JSON.stringify(c));
+                    h += '<div class="catalyst-item">' + esc(text) + '</div>';
+                });
+            }
+
+            if (item.verdict) h += '<div class="verdict-box">💡 ' + esc(item.verdict) + '</div>';
+            h += '</div>';
+        });
+        h += '</div>';
+
+        if (caution) h += '<div class="section"><div class="section-title">⚠️ 주의사항</div><div class="extra-content">' + esc(caution) + '</div></div>';
+        if (newsFlow.summary) h += '<div class="section"><div class="section-title">📰 뉴스 흐름</div><div class="extra-content">' + esc(newsFlow.summary) + '</div></div>';
+
+        h += '<div class="footer"><p>⚠️ 본 분석은 AI 기반 참고 자료이며, 투자 결정은 본인의 판단에 따라 이루어져야 합니다.</p></div>';
+        h += '</div></body></html>';
+
+        const blob = new Blob([h], { type: 'text/html;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'STGAY_리포트_' + ts.replace(/[^0-9]/g, '') + '.html';
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+
+    // 페이지 로드 시 기존 결과 확인
+    fetch('/stgay/api/status').then(r => r.json()).then(data => {
+        if (data.running) {
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('startBtn').textContent = '분석 진행 중...';
+            document.getElementById('progressSection').style.display = 'block';
+            pollTimer = setInterval(pollStatus, 1500);
+        } else if (data.has_result) {
+            fetch('/stgay/api/result').then(r => r.json()).then(renderDashboard);
+        }
+    }).catch(() => {});
+    </script>
+</body>
+</html>
