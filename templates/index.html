@@ -807,8 +807,8 @@ body {
                 html += '</div>'; 
                 // Calculator
                 var calcId = 'calc-' + (item.code || idx);
-                var bHigh = (item.swing && item.swing.box_high) || '';
-                var bLow = (item.swing && item.swing.box_low) || '';
+                var matchedStock = techMap[item.code] || {}; var bHigh = (matchedStock.swing && matchedStock.swing.box_high) || '';
+                var bLow = (matchedStock.swing && matchedStock.swing.box_low) || '';
                 html += '<div class="calc-section">';
                 html += '<button class="calc-toggle" onclick="toggleCalc(\'' + calcId + '\')">🧮 매매 계산기</button>';
                 html += '<div id="' + calcId + '" class="calc-body">';
@@ -1023,7 +1023,7 @@ body {
         var resultDiv = document.getElementById(id + '-result');
         resultDiv.innerHTML = '<p style="color:var(--text-dim)">계산 중...</p>';
         try {
-            var res = await fetch('/stgay/api/calculate', {
+            var res = await fetch('/stgay/api/calculate', { credentials: 'include',
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({high_price: high, low_price: low, buy_budget: budget, split_count: split, holding_qty: holding, mode: mode})
