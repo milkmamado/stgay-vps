@@ -437,7 +437,27 @@ body {
     .card-header { flex-direction: column; align-items: flex-start; }
     .confidence { text-align: left; }
 }
-    </style>
+    
+/* Calculator */
+.calc-section { margin-top: 16px; padding: 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; }
+.calc-toggle { width: 100%; padding: 10px; background: var(--bg-hover); border: 1px solid var(--border); border-radius: 6px; color: var(--text); cursor: pointer; font-size: 14px; text-align: center; }
+.calc-toggle:hover { border-color: var(--text-dim); }
+.calc-body { display: none; margin-top: 12px; }
+.calc-body.open { display: block; }
+.calc-row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.calc-row label { font-size: 12px; color: var(--text-dim); margin-bottom: 2px; display: block; }
+.calc-row input, .calc-row select { width: 100%; padding: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-size: 13px; }
+.calc-row .field { flex: 1; min-width: 100px; }
+.calc-btn { padding: 8px 16px; background: var(--text); color: var(--bg); border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; margin-top: 8px; }
+.calc-result-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; }
+.calc-result-table th, .calc-result-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: right; }
+.calc-result-table th { color: var(--text-dim); font-weight: 500; }
+.calc-summary { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+.calc-summary .sum-item { flex: 1; min-width: 120px; padding: 10px; background: var(--bg); border-radius: 6px; text-align: center; }
+.calc-summary .sum-label { font-size: 11px; color: var(--text-dim); }
+.calc-summary .sum-value { font-size: 16px; font-weight: 600; margin-top: 4px; }
+
+</style>
 </head>
 <body>
     <div class="navbar">
@@ -784,7 +804,29 @@ body {
                     html += '<div class="verdict-box">💡 ' + esc(item.verdict) + '</div>';
                 }
 
-                html += '</div>'; // close top3-card
+                html += '</div>'; 
+                // Calculator
+                var calcId = 'calc-' + (item.code || idx);
+                var bHigh = (item.swing && item.swing.box_high) || '';
+                var bLow = (item.swing && item.swing.box_low) || '';
+                html += '<div class="calc-section">';
+                html += '<button class="calc-toggle" onclick="toggleCalc(\'' + calcId + '\')">🧮 매매 계산기</button>';
+                html += '<div id="' + calcId + '" class="calc-body">';
+                html += '<div class="calc-row">';
+                html += '<div class="field"><label>고점(저항)</label><input type="number" id="' + calcId + '-high" value="' + bHigh + '"></div>';
+                html += '<div class="field"><label>저점(지지)</label><input type="number" id="' + calcId + '-low" value="' + bLow + '"></div>';
+                html += '<div class="field"><label>투자금액</label><input type="number" id="' + calcId + '-budget" value="500000"></div>';
+                html += '</div>';
+                html += '<div class="calc-row">';
+                html += '<div class="field"><label>분할횟수</label><input type="number" id="' + calcId + '-split" value="3" min="1" max="10"></div>';
+                html += '<div class="field"><label>보유수량</label><input type="number" id="' + calcId + '-holding" value="0"></div>';
+                html += '<div class="field"><label>모드</label><select id="' + calcId + '-mode"><option value="equal">균등</option><option value="pyramid_up">피라미드업</option><option value="pyramid_down">피라미드다운</option></select></div>';
+                html += '</div>';
+                html += '<button class="calc-btn" onclick="runCalc(\'' + calcId + '\')">계산하기</button>';
+                html += '<div id="' + calcId + '-result"></div>';
+                html += '</div></div>';
+
+                // close top3-card
             });
         }
         html += '</div>'; // close section
@@ -965,6 +1007,52 @@ body {
             fetch('/stgay/api/result').then(r => r.json()).then(renderDashboard);
         }
     }).catch(() => {});
-    </script>
+    
+    function toggleCalc(id) {
+        var el = document.getElementById(id);
+        el.classList.toggle('open');
+    }
+
+    async function runCalc(id) {
+        var high = document.getElementById(id + '-high').value;
+        var low = document.getElementById(id + '-low').value;
+        var budget = document.getElementById(id + '-budget').value;
+        var split = document.getElementById(id + '-split').value;
+        var holding = document.getElementById(id + '-holding').value;
+        var mode = document.getElementById(id + '-mode').value;
+        var resultDiv = document.getElementById(id + '-result');
+        resultDiv.innerHTML = '<p style="color:var(--text-dim)">계산 중...</p>';
+        try {
+            var res = await fetch('/stgay/api/calculate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({high_price: high, low_price: low, buy_budget: budget, split_count: split, holding_qty: holding, mode: mode})
+            });
+            var data = await res.json();
+            if (data.error) { resultDiv.innerHTML = '<p style="color:var(--red)">' + data.error + '</p>'; return; }
+            var h = '';
+            if (data.buy_plan && data.buy_plan.length) {
+                h += '<table class="calc-result-table"><tr><th>단계</th><th>매수가</th><th>비중</th><th>수량</th><th>금액</th></tr>';
+                data.buy_plan.forEach(function(p) { h += '<tr><td>'+p.step+'</td><td>'+p.price.toLocaleString()+'</td><td>'+p.weight_pct+'%</td><td>'+p.qty+'</td><td>'+p.used_budget.toLocaleString()+'</td></tr>'; });
+                h += '</table>';
+            }
+            if (data.sell_plan && data.sell_plan.length) {
+                h += '<table class="calc-result-table" style="margin-top:16px"><tr><th>단계</th><th>매도가</th><th>비중</th><th>수량</th><th>예상금액</th></tr>';
+                data.sell_plan.forEach(function(p) { h += '<tr><td>'+p.step+'</td><td>'+p.price.toLocaleString()+'</td><td>'+p.weight_pct+'%</td><td>'+p.qty+'</td><td>'+p.expected_amount.toLocaleString()+'</td></tr>'; });
+                h += '</table>';
+            }
+            if (data.summary) {
+                var b = data.summary.buy || {}; var s = data.summary.sell || {};
+                h += '<div class="calc-summary">';
+                h += '<div class="sum-item"><div class="sum-label">매수 총액</div><div class="sum-value">'+(b.total_amount||0).toLocaleString()+'원</div></div>';
+                h += '<div class="sum-item"><div class="sum-label">평균단가</div><div class="sum-value">'+(b.avg_price||0).toLocaleString()+'원</div></div>';
+                if (s.total_amount) { h += '<div class="sum-item"><div class="sum-label">매도 총액</div><div class="sum-value">'+(s.total_amount).toLocaleString()+'원</div></div>'; }
+                h += '</div>';
+            }
+            resultDiv.innerHTML = h;
+        } catch(e) { resultDiv.innerHTML = '<p style="color:var(--red)">오류: '+e.message+'</p>'; }
+    }
+
+</script>
 </body>
 </html>
