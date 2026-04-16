@@ -151,7 +151,7 @@ def calculate_trade_plan(
     if buy_budget > 0:
         result["buy_plan"] = build_buy_plan(high_price, low_price, buy_budget, split_count, mode)
         total_buy_qty = sum(p["qty"] for p in result["buy_plan"])
-        total_buy_amt = sum(p["expected_amount"] for p in result["buy_plan"])
+        total_buy_amt = sum(p["used_budget"] for p in result["buy_plan"])
         avg_buy_price = round(total_buy_amt / total_buy_qty) if total_buy_qty else 0
         result["summary"]["buy"] = {
             "total_qty": total_buy_qty,
