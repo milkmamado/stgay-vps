@@ -1,12 +1,26 @@
 import threading
 import time
 import json
+import math
 from datetime import datetime
 
 from modules.crawler import StockNewsCrawler
 from modules.analyzer import call_claude, build_ai_prompt_phase1, build_ai_prompt_final, build_ai_prompt_top3, build_ai_prompt_sleepers, ANTHROPIC_API_KEY
 from swing_engine import analyze_stock_swing
 
+# 크롤링 상태 관리
+crawl_state = {
+    'running': False,
+    'progress': [],
+    'result': None,
+    'error': None,
+    'phase': '',
+    'percent': 0,
+    'ai_analysis': None,
+}
+state_lock = threading.Lock()
+
+def run_crawl_job():
     global crawl_state
     crawler = StockNewsCrawler()
     today = datetime.now().strftime("%Y%m%d")
