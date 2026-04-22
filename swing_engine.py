@@ -174,60 +174,79 @@ def detect_box_position(prices, box_info):
 # 3차 필터: 외국인/기관 수급
 # ============================================================
 def get_investor_data(code):
-    """네이버 금융에서 외국인/기관 매매동향 크롤링 (2가지 방식 시도)"""
+    """네이버 frgn.naver에서 외국인/기관 순매매 정확히 파싱 (헤더 매핑 방식)"""
     try:
-        # 방법 1: 외국인/기관 순매매 페이지
         url = f"https://finance.naver.com/item/frgn.naver?code={code}"
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
         resp = requests.get(url, headers=headers, timeout=10)
+        resp.encoding = 'euc-kr'
         soup = BeautifulSoup(resp.text, 'html.parser')
 
         tables = soup.select('table.type2')
-        data = []
-
+        target_table = None
         for table in tables:
-            rows = table.select('tr')
-            for row in rows:
-                cols = row.select('td')
-                if len(cols) < 6:
-                    continue
-                try:
-                    date_text = cols[0].text.strip()
-                    if not date_text or '.' not in date_text:
-                        continue
-                    close_text = cols[1].text.strip().replace(',', '')
-                    if not close_text:
-                        continue
-                    close = int(close_text)
-
-                    # 외국인 순매수: 여러 컬럼 위치 시도
-                    foreign_net = 0
-                    inst_net = 0
-                    for ci in range(4, min(len(cols), 9)):
-                        val = cols[ci].text.strip().replace(',', '').replace('+', '').replace('\n', '').replace('\t', '')
-                        if val and val != '0' and val.lstrip('-').isdigit():
-                            if foreign_net == 0:
-                                foreign_net = int(val)
-                            elif inst_net == 0:
-                                inst_net = int(val)
-                                break
-
-                    data.append({
-                        'date': date_text,
-                        'close': close,
-                        'foreign_net': foreign_net,
-                        'institution_net': inst_net
-                    })
-                except (ValueError, IndexError):
-                    continue
-
-            if data:
+            header_text = table.get_text()
+            if '기관' in header_text and '외국인' in header_text and '순매매' in header_text:
+                target_table = table
                 break
+        if not target_table:
+            print(f"[get_investor_data] {code}: 거래원 테이블 못 찾음")
+            return None
+
+        # 네이버 frgn 테이블은 헤더가 2줄: TR0=[날짜,종가,전일비,등락률,거래량,기관,외국인]
+        # TR1=[순매매량,순매매량,보유주수,보유율]. TR0 단독 키워드로 매핑.
+        first_header_row = target_table.select_one('tr')
+        header_cells = first_header_row.select('th') if first_header_row else []
+        col_idx = {}
+        for i, th in enumerate(header_cells):
+            txt = th.get_text(strip=True).replace('\n', '').replace(' ', '')
+            if '날짜' in txt:
+                col_idx['date'] = i
+            elif '종가' in txt and '전' not in txt:
+                col_idx['close'] = i
+            elif txt == '기관':
+                col_idx['inst'] = i
+            elif txt == '외국인':
+                col_idx['foreign'] = i
+
+        if 'foreign' not in col_idx or 'inst' not in col_idx:
+            print(f"[get_investor_data] {code}: 헤더 매핑 실패 col_idx={col_idx}")
+            return None
+
+        def parse_int(cell):
+            txt = cell.get_text(strip=True).replace(',', '').replace('+', '').replace('\xa0', '')
+            if not txt or txt == '-':
+                return 0
+            try:
+                return int(txt)
+            except ValueError:
+                return 0
+
+        data = []
+        max_idx = max(col_idx.values())
+        for row in target_table.select('tr'):
+            cols = row.select('td')
+            if len(cols) <= max_idx:
+                continue
+            try:
+                date_text = cols[col_idx.get('date', 0)].get_text(strip=True)
+                if not date_text or '.' not in date_text:
+                    continue
+                close_raw = cols[col_idx.get('close', 1)].get_text(strip=True).replace(',', '')
+                close = int(close_raw) if close_raw.lstrip('-').isdigit() else 0
+                data.append({
+                    'date': date_text,
+                    'close': close,
+                    'foreign_net': parse_int(cols[col_idx['foreign']]),
+                    'institution_net': parse_int(cols[col_idx['inst']]),
+                })
+            except (ValueError, IndexError):
+                continue
 
         return data[:20] if data else None
     except Exception as e:
+        print(f"[get_investor_data] {code} 오류: {e}")
         return None
-
 
 def analyze_supply_demand(investor_data):
     """외국인/기관 수급 분석"""
