@@ -264,33 +264,35 @@ def analyze_supply_demand(investor_data):
     i10 = sum(d['institution_net'] for d in recent_10)
 
     # 외국인 연속 순매수
+    # 연속 카운트: 최소 1천주 이상 매수일 때만 "연속"으로 인정 (노이즈 제거)
+    MIN_DAILY = 1000
     f_consec = 0
     for d in recent_5:
-        if d['foreign_net'] > 0:
+        if d['foreign_net'] > MIN_DAILY:
             f_consec += 1
         else:
             break
 
     i_consec = 0
     for d in recent_5:
-        if d['institution_net'] > 0:
+        if d['institution_net'] > MIN_DAILY:
             i_consec += 1
         else:
             break
 
     if f_consec >= 3:
         score += 2
-        signals.append(f"외국인 {f_consec}일 연속 순매수")
-    elif f5 > 0:
+        signals.append(f"외국인 정확히 {f_consec}일 연속 순매수 (그 이상 아님)")
+    elif f5 > 10000:
         score += 1
-        signals.append(f"외국인 5일 순매수 {f5:+,}주")
+        signals.append(f"외국인 5일 누적 순매수 우위 ({f5:+,}주, 연속 아님)")
 
     if i_consec >= 3:
         score += 2
-        signals.append(f"기관 {i_consec}일 연속 순매수")
-    elif i5 > 0:
+        signals.append(f"기관 정확히 {i_consec}일 연속 순매수 (그 이상 아님)")
+    elif i5 > 10000:
         score += 1
-        signals.append(f"기관 5일 순매수 {i5:+,}주")
+        signals.append(f"기관 5일 누적 순매수 우위 ({i5:+,}주, 연속 아님)")
 
     # 쌍끌이/동반매도 노이즈 필터: 양쪽 모두 최소 1만주 이상일 때만
     MIN_NET = 10000
