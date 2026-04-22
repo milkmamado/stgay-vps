@@ -19,6 +19,88 @@ from bs4 import BeautifulSoup
 
 
 # ============================================================
+# 시총/거래대금 크롤링 (네이버 main.naver) — 2026-04-22 추가
+# ============================================================
+def get_market_cap(code):
+    """네이버 finance main.naver 시가총액 (억 단위). 인코딩/한글 의존 X."""
+    try:
+        url = f"https://finance.naver.com/item/main.naver?code={code}"
+        r = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=5)
+        soup = BeautifulSoup(r.text, 'html.parser')
+        ms = soup.find(id='_market_sum')
+        if not ms:
+            return 0
+        txt = ms.get_text(' ', strip=True).replace(',', '')
+        nums = []
+        cur = ''
+        for ch in txt:
+            if ch.isdigit():
+                cur += ch
+            else:
+                if cur:
+                    nums.append(int(cur))
+                    cur = ''
+        if cur:
+            nums.append(int(cur))
+        if len(nums) >= 2:
+            return nums[0] * 10000 + nums[1]
+        if len(nums) == 1:
+            return nums[0]
+        return 0
+    except Exception:
+        return 0
+
+
+def grade_market_cap(cap_eok):
+    """시총 등급 (스윙 트레이더 관점). 1천~5천억이 스위트 스팟."""
+    if cap_eok <= 0:
+        return ('unknown', '시총 미상')
+    elif cap_eok < 500:
+        return ('junk_risk', f'⚠️ 잡주 위험 ({cap_eok:,}억) — 호가 얇음, 세력 흔들림')
+    elif cap_eok < 1000:
+        return ('small_volatile', f'📊 소형주 ({cap_eok:,}억) — 변동 크나 분할매수 필수')
+    elif cap_eok < 5000:
+        return ('sweet_spot', f'🎯 스윙 최적 ({cap_eok:,}억) — 세력+유동성 균형')
+    elif cap_eok < 30000:
+        return ('mid_cap', f'📈 중형주 ({cap_eok:,}억) — 안정적, 지수 추종')
+    else:
+        return ('mega_cap', f'🐘 대형주 ({cap_eok:,}억) — 불장에만 움직임, 하락장 비추천')
+
+
+
+def calc_liquidity_info(prices, code):
+    """유동성 + 시총 등급 정보. 실패 시 안전 기본값."""
+    try:
+        recent_5 = prices[-5:] if len(prices) >= 5 else prices
+        today = prices[-1] if prices else {}
+        trade_val_today = (today.get('close', 0) * today.get('volume', 0)) / 100_000_000
+        trade_val_5d = np.mean([p['close'] * p['volume'] for p in recent_5]) / 100_000_000 if recent_5 else 0
+        market_cap = get_market_cap(code) if code else 0
+        cap_grade, cap_label = grade_market_cap(market_cap)
+
+        warn = []
+        if cap_grade == 'junk_risk':
+            warn.append(cap_label)
+        if trade_val_5d < 30:
+            warn.append(f"5일평균 거래대금 {trade_val_5d:.1f}억 (저유동)")
+
+        return {
+            'market_cap_eok': market_cap,
+            'market_cap_grade': cap_grade,
+            'market_cap_label': cap_label,
+            'trade_val_today_eok': round(trade_val_today, 1),
+            'trade_val_5d_avg_eok': round(trade_val_5d, 1),
+            'liquidity_warn': warn,
+        }
+    except Exception:
+        return {
+            'market_cap_eok': 0, 'market_cap_grade': 'unknown', 'market_cap_label': '',
+            'trade_val_today_eok': 0, 'trade_val_5d_avg_eok': 0, 'liquidity_warn': [],
+        }
+
+
+
+# ============================================================
 # 1차 필터: 장대양봉 감지 (최근 15일)
 # ============================================================
 def detect_big_candles(prices, lookback=15):
@@ -538,7 +620,7 @@ def analyze_stock_swing(prices, code=None, stock_name='', news_articles=None):
             'color': '#666', 'show': False,
             'signals': [], 'warnings': ['가격 데이터 부족'],
             'stage1': None, 'stage2': None, 'stage3': None,
-            'reference': {}, 'trading_guide': {}, 'risks': [],
+            'reference': {}, 'trading_guide': {}, 'risks': [], 'liquidity': {'market_cap_eok': 0, 'trade_val_today_eok': 0, 'trade_val_5d_avg_eok': 0, 'liquidity_warn': []},
         }
 
     signals = []
@@ -556,7 +638,7 @@ def analyze_stock_swing(prices, code=None, stock_name='', news_articles=None):
             'color': '#666', 'show': False,
             'signals': [], 'warnings': [f'거래대금 {avg_trade_val/100_000_000:.1f}억 (5억 미만)'],
             'stage1': None, 'stage2': None, 'stage3': None,
-            'reference': {}, 'trading_guide': {}, 'risks': [],
+            'reference': {}, 'trading_guide': {}, 'risks': [], 'liquidity': {'market_cap_eok': 0, 'trade_val_today_eok': 0, 'trade_val_5d_avg_eok': 0, 'liquidity_warn': []},
         }
 
     # === 1차: 장대양봉 감지 ===
@@ -686,5 +768,6 @@ def analyze_stock_swing(prices, code=None, stock_name='', news_articles=None):
         'reference': ref,
         'trading_guide': trading_guide,
         'risks': risks,
+        'liquidity': calc_liquidity_info(prices, code),
         'stages_passed': stages_passed,
     }
