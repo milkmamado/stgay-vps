@@ -453,7 +453,6 @@ body {
 .calc-row label { font-size: 12px; color: var(--text-dim); margin-bottom: 2px; display: block; }
 .calc-row input, .calc-row select { width: 100%; padding: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-size: 13px; }
 .calc-row .field { flex: 1; min-width: 100px; }
-        .field label { display: block; margin-bottom: 6px; }
 .calc-btn { padding: 8px 16px; background: var(--text); color: var(--bg); border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; margin-top: 8px; }
 .calc-result-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; }
 .calc-result-table th, .calc-result-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: right; }
@@ -815,7 +814,6 @@ body {
                 var calcId = 'calc-' + (item.code || idx);
                 var matchedStock = techMap[item.code] || {}; var bHigh = (matchedStock.swing && matchedStock.swing.box_high) || '';
                 var bLow = (matchedStock.swing && matchedStock.swing.box_low) || '';
-                html += '<div class="pdcsi-mount" data-code="' + (item.code || '') + '"></div>';
                 var rangeText = (bHigh && bLow) ? (Number(bLow).toLocaleString() + '원 ~ ' + Number(bHigh).toLocaleString() + '원') : '';
                 html += '<div class="calc-section">';
                 html += '<button class="calc-toggle" onclick="toggleCalc(\'' + calcId + '\')">🧮 매매 계산기</button>';
@@ -832,8 +830,7 @@ body {
                     }
                 }
                 html += '<div class="calc-row">';
-                html += '<label>최저가</label><input type="number" id="' + calcId + '-low" value="" placeholder="범위 최저" style="margin-bottom:8px;width:100%">';
-                html += '<label>최고가</label><input type="number" id="' + calcId + '-high" value="" placeholder="범위 최고" style="width:100%"></div>';
+                html += '<div class="field"><label>진입가</label><input type="number" id="' + calcId + '-entry" value="" placeholder="매수할 가격"></div>';
                 html += '<div class="field"><label>투자금액</label><input type="number" id="' + calcId + '-budget" value="500000"></div>';
                 html += '</div>';
                 html += '<div class="calc-row">';
@@ -1046,15 +1043,11 @@ body {
     }
 
     function runCalc(id) {
-        var lowEl = document.getElementById(id + '-low');
-        var highEl = document.getElementById(id + '-high');
-        var rMin = lowEl ? parseFloat(lowEl.value) : NaN;
-        var rMax = highEl ? parseFloat(highEl.value) : NaN;
-        if (isNaN(rMin) && !isNaN(rMax)) rMin = rMax;
-        if (isNaN(rMax) && !isNaN(rMin)) rMax = rMin;
-        if (rMin > rMax) { var _t = rMin; rMin = rMax; rMax = _t; }
-        var entry = !isNaN(rMin) ? rMin : NaN;
-        var rangeMode = !isNaN(rMin) && !isNaN(rMax) && rMin !== rMax;
+        var entryEl = document.getElementById(id + '-entry');
+        var entry = parseFloat(entryEl.value);
+        var rangeMode = entryEl.dataset && entryEl.dataset.rangeMode === '1';
+        var rMin = rangeMode ? parseFloat(entryEl.dataset.rmin) : null;
+        var rMax = rangeMode ? parseFloat(entryEl.dataset.rmax) : null;
         var budget = parseFloat(document.getElementById(id + '-budget').value);
         var split = parseInt(document.getElementById(id + '-split').value) || 1;
         var mode = document.getElementById(id + '-mode').value;
@@ -1073,7 +1066,7 @@ body {
         var totalQty = 0, totalAmount = 0;
         var stepPrices = [];
         if (rangeMode && rMin && rMax && split > 1) {
-            for (var s = 0; s < split; s++) stepPrices.push(Math.round(rMin + (rMax - rMin) * (s / (split - 1))));
+            for (var s = 0; s < split; s++) stepPrices.push(Math.round(rMax - (rMax - rMin) * (s / (split - 1))));
         } else {
             for (var s = 0; s < split; s++) stepPrices.push(entry);
         }
@@ -1097,6 +1090,5 @@ body {
     }
 
 </script>
-{% include 'pdcsi_widget.html' %}
 </body>
 </html>

@@ -815,8 +815,17 @@ body {
                 var calcId = 'calc-' + (item.code || idx);
                 var matchedStock = techMap[item.code] || {}; var bHigh = (matchedStock.swing && matchedStock.swing.box_high) || '';
                 var bLow = (matchedStock.swing && matchedStock.swing.box_low) || '';
-                html += '<div class="pdcsi-mount" data-code="' + (item.code || '') + '"></div>';
                 var rangeText = (bHigh && bLow) ? (Number(bLow).toLocaleString() + '원 ~ ' + Number(bHigh).toLocaleString() + '원') : '';
+          html += `
+            <div class="pdcsi-section">
+              <button id="pdcsi-toggle-${item.code}" class="pdcsi-toggle" onclick="togglePdcsi('${item.code}')">
+                <span>🐷🐶 PDCSI 개돼지 지수 (종토방 군중심리)</span>
+                <span class="pdcsi-arrow">▶</span>
+              </button>
+              <div id="pdcsi-body-${item.code}" class="pdcsi-body"></div>
+            </div>
+          `;
+
                 html += '<div class="calc-section">';
                 html += '<button class="calc-toggle" onclick="toggleCalc(\'' + calcId + '\')">🧮 매매 계산기</button>';
                 html += '<div id="' + calcId + '" class="calc-body">';
@@ -917,7 +926,46 @@ body {
         h += '<style>';
         h += document.querySelector('style').textContent;
         h += '.chart-img { width:100%; border-radius:8px; }';
-        h += '</style></head><body style="background:var(--bg);color:var(--text);font-family:Segoe UI,Noto Sans KR,sans-serif;">';
+        h += '
+/* ─── PDCSI (개돼지 지수) 섹션 ─── */
+.pdcsi-section { margin-top: 12px; border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 10px; background: linear-gradient(135deg, rgba(168, 85, 247, 0.05), rgba(236, 72, 153, 0.05)); overflow: hidden; }
+.pdcsi-toggle { width: 100%; padding: 10px 14px; background: transparent; border: none; color: #c084fc; font-weight: 700; font-size: 13px; text-align: left; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+.pdcsi-toggle:hover { background: rgba(168, 85, 247, 0.08); }
+.pdcsi-toggle .pdcsi-arrow { transition: transform 0.2s; }
+.pdcsi-toggle.open .pdcsi-arrow { transform: rotate(90deg); }
+.pdcsi-body { display: none; padding: 14px; border-top: 1px solid rgba(168, 85, 247, 0.2); background: rgba(15, 15, 25, 0.4); }
+.pdcsi-body.open { display: block; }
+.pdcsi-loading { text-align: center; padding: 16px; color: #94a3b8; font-size: 12px; }
+.pdcsi-error { color: #f87171; font-size: 12px; padding: 8px; }
+.pdcsi-score-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.pdcsi-score-big { font-size: 32px; font-weight: 900; color: #fff; line-height: 1; }
+.pdcsi-score-adj { font-size: 13px; color: #94a3b8; }
+.pdcsi-verdict { padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+.pdcsi-verdict.buy { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+.pdcsi-verdict.warn { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+.pdcsi-verdict.exit { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+.pdcsi-verdict.wait { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
+.pdcsi-bars { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 12px; }
+.pdcsi-bar-row { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+.pdcsi-bar-label { width: 44px; color: #94a3b8; flex-shrink: 0; }
+.pdcsi-bar-track { flex: 1; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; }
+.pdcsi-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+.pdcsi-bar-fill.euphoria { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+.pdcsi-bar-fill.panic { background: linear-gradient(90deg, #60a5fa, #3b82f6); }
+.pdcsi-bar-fill.distrust { background: linear-gradient(90deg, #f87171, #ef4444); }
+.pdcsi-bar-fill.shilling { background: linear-gradient(90deg, #c084fc, #a855f7); }
+.pdcsi-bar-val { width: 28px; text-align: right; color: #cbd5e1; font-weight: 600; flex-shrink: 0; }
+.pdcsi-academic { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
+.pdcsi-acad-card { padding: 6px 8px; background: rgba(255,255,255,0.03); border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); }
+.pdcsi-acad-label { font-size: 9px; color: #64748b; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+.pdcsi-acad-val { font-size: 13px; font-weight: 700; color: #e2e8f0; }
+.pdcsi-acad-tag { display: inline-block; margin-top: 2px; padding: 1px 6px; border-radius: 4px; font-size: 9px; background: rgba(255,255,255,0.05); color: #94a3b8; }
+.pdcsi-meta { font-size: 10px; color: #64748b; line-height: 1.5; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05); }
+.pdcsi-meta strong { color: #c084fc; }
+.pdcsi-refresh { background: transparent; border: 1px solid rgba(168, 85, 247, 0.3); color: #c084fc; padding: 3px 8px; border-radius: 6px; font-size: 10px; cursor: pointer; margin-left: 6px; }
+.pdcsi-refresh:hover { background: rgba(168, 85, 247, 0.1); }
+
+</style></head><body style="background:var(--bg);color:var(--text);font-family:Segoe UI,Noto Sans KR,sans-serif;">';
         h += '<div style="max-width:900px;margin:0 auto;padding:20px;">';
         h += '<h1 style="text-align:center;margin-bottom:6px;">📊 STGAY 분석 리포트</h1>';
         h += '<p style="text-align:center;color:var(--text-dim);font-size:13px;margin-bottom:20px;">' + esc(ts) + '</p>';
@@ -1096,7 +1144,105 @@ body {
         resultDiv.innerHTML = h;
     }
 
+
+// ─── PDCSI (개돼지 지수) 함수 ───
+const PDCSI_API_URL = "https://lbpkxtvxmwgxlklprhuv.supabase.co/functions/v1/pdcsi-analyze";
+const PDCSI_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxicGt4dHZ4bXdneGxrbHByaHV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNTMzMTAsImV4cCI6MjA5MTgyOTMxMH0.XHjyPztUnrSOil482WPkfVz7IKXtgS3KmaX3a27KtgM";
+
+function togglePdcsi(code) {
+  const btn = document.getElementById('pdcsi-toggle-' + code);
+  const body = document.getElementById('pdcsi-body-' + code);
+  if (!btn || !body) return;
+  const isOpen = body.classList.toggle('open');
+  btn.classList.toggle('open');
+  if (isOpen && !body.dataset.loaded) {
+    loadPdcsi(code);
+  }
+}
+
+async function loadPdcsi(code, forceRefresh) {
+  const body = document.getElementById('pdcsi-body-' + code);
+  if (!body) return;
+  body.innerHTML = '<div class="pdcsi-loading">📡 종토방 분석 중... (10~30초)</div>';
+
+  try {
+    const resp = await fetch(PDCSI_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + PDCSI_ANON_KEY,
+        'apikey': PDCSI_ANON_KEY
+      },
+      body: JSON.stringify({ stock_code: code, force_refresh: !!forceRefresh })
+    });
+
+    if (!resp.ok) {
+      const errText = await resp.text();
+      body.innerHTML = '<div class="pdcsi-error">❌ 분석 실패 (' + resp.status + '): ' + errText.slice(0, 200) + '</div>';
+      return;
+    }
+
+    const data = await resp.json();
+    body.dataset.loaded = '1';
+    renderPdcsi(body, data, code);
+  } catch (e) {
+    body.innerHTML = '<div class="pdcsi-error">❌ 네트워크 오류: ' + (e.message || e) + '</div>';
+  }
+}
+
+function renderPdcsi(container, d, code) {
+  const verdict = (d.verdict || 'WAIT').toUpperCase();
+  let verdictClass = 'wait';
+  if (verdict.includes('BUY')) verdictClass = 'buy';
+  else if (verdict.includes('EXIT') || verdict.includes('AVOID')) verdictClass = 'exit';
+  else if (verdict.includes('WATCH') || verdict.includes('PARTIAL')) verdictClass = 'warn';
+
+  const acad = d.academic || {};
+  const mom = acad.sentiment_momentum || {};
+  const adjustedShown = (typeof d.pdcsi_adjusted === 'number' && d.pdcsi_adjusted !== d.pdcsi);
+
+  const cachedTag = d._cached ? '<span class="pdcsi-acad-tag">캐시</span>' : '';
+
+  container.innerHTML = `
+    <div class="pdcsi-score-row">
+      <div class="pdcsi-score-big">${d.pdcsi ?? '-'}</div>
+      ${adjustedShown ? `<div class="pdcsi-score-adj">학술보정: <strong style="color:#c084fc">${d.pdcsi_adjusted}</strong></div>` : ''}
+      <div class="pdcsi-verdict ${verdictClass}">${verdict}</div>
+      <button class="pdcsi-refresh" onclick="loadPdcsi('${code}', true)">↻ 새로</button>
+    </div>
+
+    <div class="pdcsi-bars">
+      <div class="pdcsi-bar-row"><span class="pdcsi-bar-label">환희</span><div class="pdcsi-bar-track"><div class="pdcsi-bar-fill euphoria" style="width:${d.euphoria || 0}%"></div></div><span class="pdcsi-bar-val">${d.euphoria ?? 0}</span></div>
+      <div class="pdcsi-bar-row"><span class="pdcsi-bar-label">공포</span><div class="pdcsi-bar-track"><div class="pdcsi-bar-fill panic" style="width:${d.panic || 0}%"></div></div><span class="pdcsi-bar-val">${d.panic ?? 0}</span></div>
+      <div class="pdcsi-bar-row"><span class="pdcsi-bar-label">불신</span><div class="pdcsi-bar-track"><div class="pdcsi-bar-fill distrust" style="width:${d.distrust || 0}%"></div></div><span class="pdcsi-bar-val">${d.distrust ?? 0}</span></div>
+      <div class="pdcsi-bar-row"><span class="pdcsi-bar-label">선동</span><div class="pdcsi-bar-track"><div class="pdcsi-bar-fill shilling" style="width:${d.shilling || 0}%"></div></div><span class="pdcsi-bar-val">${d.shilling ?? 0}</span></div>
+    </div>
+
+    <div class="pdcsi-academic">
+      <div class="pdcsi-acad-card">
+        <div class="pdcsi-acad-label">불일치</div>
+        <div class="pdcsi-acad-val">${acad.disagreement_index ?? '-'}</div>
+        <span class="pdcsi-acad-tag">${acad.disagreement_label || '-'}</span>
+      </div>
+      <div class="pdcsi-acad-card">
+        <div class="pdcsi-acad-label">이상거래</div>
+        <div class="pdcsi-acad-val">${acad.abnormal_volume_z ?? '-'}σ</div>
+        <span class="pdcsi-acad-tag">${acad.abnormal_volume_label || '-'}</span>
+      </div>
+      <div class="pdcsi-acad-card">
+        <div class="pdcsi-acad-label">모멘텀</div>
+        <div class="pdcsi-acad-val">${mom.pdcsi_delta != null ? (mom.pdcsi_delta > 0 ? '+' : '') + mom.pdcsi_delta : '-'}</div>
+        <span class="pdcsi-acad-tag">${mom.momentum_label || '데이터부족'}</span>
+      </div>
+    </div>
+
+    <div class="pdcsi-meta">
+      <strong>활동성</strong> ${d.velocity_label || '-'} (${d.velocity_score ?? 0}점) · <strong>게시글</strong> ${d.post_count ?? 0}건 · <strong>상태</strong> ${d.status || '-'} ${cachedTag}
+      ${d.enhancement_note ? '<br>💡 ' + d.enhancement_note : ''}
+    </div>
+  `;
+}
+
 </script>
-{% include 'pdcsi_widget.html' %}
 </body>
 </html>

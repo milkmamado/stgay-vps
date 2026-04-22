@@ -440,9 +440,6 @@ body {
     
 /* Calculator */
 
-                .calc-range-btn { background: rgba(59,130,246,0.2); border: 1px solid rgba(59,130,246,0.4); color: var(--accent); padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; margin-bottom: 8px; transition: all 0.2s; width: 100%; }
-        .calc-range-btn:hover { background: rgba(59,130,246,0.35); }
-        .calc-range-btn.applied { background: rgba(34,197,94,0.2); border-color: rgba(34,197,94,0.4); color: #22c55e; }
         .calc-range-info { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; font-size: 14px; color: var(--accent); text-align: center; }
         .calc-section { margin-top: 16px; padding: 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; }
 .calc-toggle { width: 100%; padding: 10px; background: var(--bg-hover); border: 1px solid var(--border); border-radius: 6px; color: var(--text); cursor: pointer; font-size: 14px; text-align: center; }
@@ -453,7 +450,6 @@ body {
 .calc-row label { font-size: 12px; color: var(--text-dim); margin-bottom: 2px; display: block; }
 .calc-row input, .calc-row select { width: 100%; padding: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-size: 13px; }
 .calc-row .field { flex: 1; min-width: 100px; }
-        .field label { display: block; margin-bottom: 6px; }
 .calc-btn { padding: 8px 16px; background: var(--text); color: var(--bg); border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; margin-top: 8px; }
 .calc-result-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; }
 .calc-result-table th, .calc-result-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: right; }
@@ -815,25 +811,13 @@ body {
                 var calcId = 'calc-' + (item.code || idx);
                 var matchedStock = techMap[item.code] || {}; var bHigh = (matchedStock.swing && matchedStock.swing.box_high) || '';
                 var bLow = (matchedStock.swing && matchedStock.swing.box_low) || '';
-                html += '<div class="pdcsi-mount" data-code="' + (item.code || '') + '"></div>';
                 var rangeText = (bHigh && bLow) ? (Number(bLow).toLocaleString() + '원 ~ ' + Number(bHigh).toLocaleString() + '원') : '';
                 html += '<div class="calc-section">';
                 html += '<button class="calc-toggle" onclick="toggleCalc(\'' + calcId + '\')">🧮 매매 계산기</button>';
                 html += '<div id="' + calcId + '" class="calc-body">';
-                if (rangeText) {
-                    html += '<div class="calc-range-info">' + String.fromCodePoint(0x1F4CA) + ' \xec\xb6\x94\xec\xb2\x9c \xec\xa7\x84\xec\x9e\x85\xea\xb0\x80: ' + rangeText + '</div>';
-                    var rMatch = rangeText.replace(/,/g,'').match(/([\d.]+)\s*[~\uFF5E]\s*([\d.]+)/);
-                    if (rMatch) {
-                        var rMin = parseFloat(rMatch[1]), rMax = parseFloat(rMatch[2]);
-                        if (rMin > rMax) { var t = rMin; rMin = rMax; rMax = t; }
-                        html += '<input type="hidden" id="' + calcId + '-rmin" value="' + rMin + '">';
-                        html += '<input type="hidden" id="' + calcId + '-rmax" value="' + rMax + '">';
-                        html += '<button type="button" class="calc-range-btn" onclick="applyRange(\'' + calcId + '\')">' + String.fromCodePoint(0x1F4CA) + ' \xec\xb6\x94\xec\xb2\x9c \xeb\xb2\x94\xec\x9c\x84\xeb\xa1\x9c \xec\x9e\x90\xeb\x8f\x99 \xeb\xb6\x84\xed\x95\xa0</button>';
-                    }
-                }
+                if (rangeText) { html += '<div class="calc-range-info">📊 추천 진입가: ' + rangeText + '</div>'; }
                 html += '<div class="calc-row">';
-                html += '<label>최저가</label><input type="number" id="' + calcId + '-low" value="" placeholder="범위 최저" style="margin-bottom:8px;width:100%">';
-                html += '<label>최고가</label><input type="number" id="' + calcId + '-high" value="" placeholder="범위 최고" style="width:100%"></div>';
+                html += '<div class="field"><label>진입가</label><input type="number" id="' + calcId + '-entry" value="" placeholder="매수할 가격"></div>';
                 html += '<div class="field"><label>투자금액</label><input type="number" id="' + calcId + '-budget" value="500000"></div>';
                 html += '</div>';
                 html += '<div class="calc-row">';
@@ -1032,29 +1016,8 @@ body {
         el.classList.toggle('open');
     }
 
-    function applyRange(calcId) {
-        var rminEl = document.getElementById(calcId + '-rmin');
-        var rmaxEl = document.getElementById(calcId + '-rmax');
-        if (!rminEl || !rmaxEl) return;
-        var entryEl = document.getElementById(calcId + '-entry');
-        entryEl.value = rmaxEl.value;
-        entryEl.dataset.rangeMode = '1';
-        entryEl.dataset.rmin = rminEl.value;
-        entryEl.dataset.rmax = rmaxEl.value;
-        var btns = document.querySelectorAll('.calc-range-btn');
-        btns.forEach(function(b){ b.innerHTML = '\u2705 \xeb\xb2\x94\xec\x9c\x84 \xec\xa0\x81\xec\x9a\xa9\xeb\x90\xa8'; b.classList.add('applied'); });
-    }
-
     function runCalc(id) {
-        var lowEl = document.getElementById(id + '-low');
-        var highEl = document.getElementById(id + '-high');
-        var rMin = lowEl ? parseFloat(lowEl.value) : NaN;
-        var rMax = highEl ? parseFloat(highEl.value) : NaN;
-        if (isNaN(rMin) && !isNaN(rMax)) rMin = rMax;
-        if (isNaN(rMax) && !isNaN(rMin)) rMax = rMin;
-        if (rMin > rMax) { var _t = rMin; rMin = rMax; rMax = _t; }
-        var entry = !isNaN(rMin) ? rMin : NaN;
-        var rangeMode = !isNaN(rMin) && !isNaN(rMax) && rMin !== rMax;
+        var entry = parseFloat(document.getElementById(id + '-entry').value);
         var budget = parseFloat(document.getElementById(id + '-budget').value);
         var split = parseInt(document.getElementById(id + '-split').value) || 1;
         var mode = document.getElementById(id + '-mode').value;
@@ -1071,20 +1034,13 @@ body {
         var totalWeight = weights.reduce(function(a,b){return a+b;},0);
         var h = '<table class="calc-result-table"><tr><th>단계</th><th>매수가</th><th>비중</th><th>수량</th><th>금액</th></tr>';
         var totalQty = 0, totalAmount = 0;
-        var stepPrices = [];
-        if (rangeMode && rMin && rMax && split > 1) {
-            for (var s = 0; s < split; s++) stepPrices.push(Math.round(rMin + (rMax - rMin) * (s / (split - 1))));
-        } else {
-            for (var s = 0; s < split; s++) stepPrices.push(entry);
-        }
         for (var i = 0; i < split; i++) {
-            var sp = stepPrices[i];
             var pct = Math.round(weights[i] / totalWeight * 100);
             var alloc = Math.floor(budget * weights[i] / totalWeight);
-            var qty = Math.floor(alloc / sp);
-            var used = qty * sp;
+            var qty = Math.floor(alloc / entry);
+            var used = qty * entry;
             totalQty += qty; totalAmount += used;
-            h += '<tr><td>'+(i+1)+'차</td><td>'+sp.toLocaleString()+'원</td><td>'+pct+'%</td><td>'+qty+'주</td><td>'+used.toLocaleString()+'원</td></tr>';
+            h += '<tr><td>'+(i+1)+'차</td><td>'+entry.toLocaleString()+'원</td><td>'+pct+'%</td><td>'+qty+'주</td><td>'+used.toLocaleString()+'원</td></tr>';
         }
         h += '</table>';
         h += '<div class="calc-summary">';
@@ -1097,6 +1053,5 @@ body {
     }
 
 </script>
-{% include 'pdcsi_widget.html' %}
 </body>
 </html>

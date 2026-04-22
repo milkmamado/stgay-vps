@@ -123,9 +123,9 @@ def api_calculate():
 
     data = request.get_json(silent=True) or request.form.to_dict() or {}
 
-    high = _num(data.get('high') or data.get('box_high') or data.get('resistance') or data.get('high_price'))
-    low = _num(data.get('low') or data.get('box_low') or data.get('support') or data.get('low_price'))
-    budget = _num(data.get('budget') or data.get('amount') or data.get('capital') or data.get('buy_budget'))
+    high = _num(data.get('high') or data.get('box_high') or data.get('resistance'))
+    low = _num(data.get('low') or data.get('box_low') or data.get('support'))
+    budget = _num(data.get('budget') or data.get('amount') or data.get('capital'))
     splits = max(1, min(10, _int(data.get('splits') or data.get('split_count') or 3, 3)))
     holding_qty = max(0, _int(data.get('holding_qty') or data.get('holdingQty') or data.get('qty') or 0, 0))
     mode = str(data.get('mode') or 'equal').strip().lower()
@@ -204,33 +204,6 @@ def api_calculate():
         'sell_total_amount': sum(x['amount'] for x in sell_plan),
         'sellTotalAmount': sum(x['amount'] for x in sell_plan),
     }
-
-
-    for p in buy_plan:
-        if isinstance(p, dict):
-            p.setdefault('weight_pct', p.get('weight', p.get('percent', 0)))
-            p.setdefault('used_budget', p.get('amount', 0))
-
-    for p in sell_plan:
-        if isinstance(p, dict):
-            p.setdefault('weight_pct', p.get('weight', p.get('percent', 0)))
-            p.setdefault('expected_amount', p.get('amount', 0))
-
-    if isinstance(summary, dict):
-        buy_summary = summary.get('buy') or {}
-        if 'avg_price' not in buy_summary and 'avg_buy_price' in buy_summary:
-            buy_summary['avg_price'] = buy_summary.get('avg_buy_price', 0)
-        if 'total_amount' not in buy_summary:
-            buy_summary['total_amount'] = total_amount
-        summary['buy'] = buy_summary
-
-        sell_summary = summary.get('sell') or {}
-        if 'total_amount' not in sell_summary:
-            sell_summary['total_amount'] = sum(
-                int((p.get('expected_amount', p.get('amount', 0)) or 0))
-                for p in sell_plan if isinstance(p, dict)
-            )
-        summary['sell'] = sell_summary
 
     return jsonify({
         'ok': True,

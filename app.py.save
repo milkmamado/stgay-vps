@@ -1,0 +1,109 @@
+ㅌx
+x
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from functools import wraps
+import threading
+
+from modules.crawler import StockNewsCrawler
+from modules.job import run_crawl_job, crawl_state, state_lock
+from swing_engine import analyze_stock_swing
+
+app = Flask(__name__)
+app.secret_key = 'stgay_stock_crawler_secret_key_2026'
+app.config['APPLICATION_ROOT'] = '/stgay'
+
+ACCESS_PASSWORD = '12661266'
+
+
+def login_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get('authenticated'):
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated
+
+
+@app.route('/stgay/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        password = request.form.get('password', '')
+        if password == ACCESS_PASSWORD:
+            session['authenticated'] = True
+            return redirect('/stgay/')
+        return render_template('login.html', error='비밀번호가 틀렸습니다.')
+    return render_template('login.html', error=None)
+
+@app.route('/stgay/logout')
+def logout():
+    session.pop('authenticated', None)
+    return redirect('/stgay/login')
+
+@app.route('/stgay/')
+@login_required
+def index():
+    return render_template('index.html')
+
+@app.route('/stgay/api/start', methods=['POST'])
+@login_required
+def api_start():
+    with state_lock:
+        if crawl_state['running']:
+            return jsonify({'error': '이미 실행 중입니다'}), 400
+    t = threading.Thread(target=run_crawl_job, daemon=True)
+    t.start()
+    return jsonify({'ok': True})
+
+@app.route('/stgay/api/status')
+@login_required
+def api_status():
+    with state_lock:
+        return jsonify({
+            'running': crawl_state['running'],
+            'progress': crawl_state['progress'],
+            'phase': crawl_state['phase'],
+            'percent': crawl_state['percent'],
+            'error': crawl_state['error'],
+            'has_result': crawl_state['result'] is not None
+        })
+
+@app.route('/stgay/api/result')
+@login_required
+def api_result():
+    with state_lock:
+        if crawl_state['result']:
+            return jsonify(crawl_state['result'])
+        return jsonify({'error': '결과 없음'}), 404
+
+@app.route('/stgay/api/theme/<code>')
+@login_required
+def api_theme_detail(code):
+    crawler = StockNewsCrawler()
+    detail = crawler.get_theme_detail(code)
+    if detail:
+        return jsonify(detail)
+    return jsonify({'error': '테마 정보를 찾을 수 없습니다'}), 404
+
+@app.route('/stgay/api/stock/<code>/tech')
+@login_required
+def api_stock_tech(code):
+    crawler = StockNewsCrawler()
+    prices = crawler.get_stock_price_data(code)
+    if not prices or len(prices) < 10:
+        return jsonify({'error': '가격 데이터 부족'}), 404
+    tech = crawler.calculate_technical_indicators(prices) if len(prices) >= 20 else {}
+    current_price = crawler.get_current_price(code)
+    if current_price and tech:
+        tech['current'] = current_price
+    swing = analyze_stock_swing(prices=prices, code=code)
+    return jsonify({
+        'indicators': tech,
+        'swing': swing,
+        'prices': [{'date': p['date'], 'open': p['open'], 'high': p['high'],
+                     'low': p['low'], 'close': p['close'], 'volume': p['volume']}
+                    for p in prices[-60:]]
+    })
+
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5003, debug=False)

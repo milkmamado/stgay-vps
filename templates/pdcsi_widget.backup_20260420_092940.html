@@ -1,0 +1,137 @@
+<!-- PDCSI_WIDGET v1 - 격리 위젯. 절대 index.html 다른 부분과 섞이지 않음 -->
+<style>
+.pdcsi-section { margin-top: 12px; border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 10px; background: linear-gradient(135deg, rgba(168, 85, 247, 0.05), rgba(236, 72, 153, 0.05)); overflow: hidden; }
+.pdcsi-toggle { width: 100%; padding: 10px 14px; background: transparent; border: none; color: #c084fc; font-weight: 700; font-size: 13px; text-align: left; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+.pdcsi-toggle:hover { background: rgba(168, 85, 247, 0.08); }
+.pdcsi-toggle .pdcsi-arrow { transition: transform 0.2s; }
+.pdcsi-toggle.open .pdcsi-arrow { transform: rotate(90deg); }
+.pdcsi-body { display: none; padding: 14px; border-top: 1px solid rgba(168, 85, 247, 0.2); background: rgba(15, 15, 25, 0.4); }
+.pdcsi-body.open { display: block; }
+.pdcsi-loading { text-align: center; padding: 16px; color: #94a3b8; font-size: 12px; }
+.pdcsi-error { color: #f87171; font-size: 12px; padding: 8px; }
+.pdcsi-score-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.pdcsi-score-big { font-size: 32px; font-weight: 900; color: #fff; line-height: 1; }
+.pdcsi-score-adj { font-size: 11px; color: #94a3b8; }
+.pdcsi-verdict { padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+.pdcsi-verdict.buy { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+.pdcsi-verdict.warn { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+.pdcsi-verdict.exit { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+.pdcsi-verdict.wait { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
+.pdcsi-bars { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 12px; }
+.pdcsi-bar-row { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+.pdcsi-bar-label { width: 44px; color: #94a3b8; flex-shrink: 0; }
+.pdcsi-bar-track { flex: 1; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; }
+.pdcsi-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+.pdcsi-bar-fill.euphoria { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+.pdcsi-bar-fill.panic { background: linear-gradient(90deg, #60a5fa, #3b82f6); }
+.pdcsi-bar-fill.distrust { background: linear-gradient(90deg, #f87171, #ef4444); }
+.pdcsi-bar-fill.shilling { background: linear-gradient(90deg, #c084fc, #a855f7); }
+.pdcsi-bar-val { width: 28px; text-align: right; color: #cbd5e1; font-weight: 600; flex-shrink: 0; }
+.pdcsi-meta { font-size: 10px; color: #64748b; line-height: 1.5; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05); }
+.pdcsi-meta strong { color: #c084fc; }
+.pdcsi-refresh { background: transparent; border: 1px solid rgba(168, 85, 247, 0.3); color: #c084fc; padding: 3px 8px; border-radius: 6px; font-size: 10px; cursor: pointer; margin-left: 6px; }
+.pdcsi-refresh:hover { background: rgba(168, 85, 247, 0.1); }
+</style>
+
+<script>
+(function () {
+  var PDCSI_API_URL = "https://lbpkxtvxmwgxlklprhuv.supabase.co/functions/v1/pdcsi-analyze";
+  var PDCSI_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxicGt4dHZ4bXdneGxrbHByaHV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNTMzMTAsImV4cCI6MjA5MTgyOTMxMH0.XHjyPztUnrSOil482WPkfVz7IKXtgS3KmaX3a27KtgM";
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+
+  function renderMount(mount) {
+    if (mount.dataset.pdcsiInit === '1') return;
+    mount.dataset.pdcsiInit = '1';
+    var code = mount.getAttribute('data-code') || '';
+    if (!code) return;
+    var section = document.createElement('div');
+    section.className = 'pdcsi-section';
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pdcsi-toggle';
+    btn.innerHTML = '<span>🐷🐶 PDCSI 개돼지 지수 (종토방 군중심리)</span><span class="pdcsi-arrow">▶</span>';
+    var body = document.createElement('div');
+    body.className = 'pdcsi-body';
+    section.appendChild(btn);
+    section.appendChild(body);
+    mount.appendChild(section);
+
+    btn.addEventListener('click', function () {
+      var isOpen = body.classList.toggle('open');
+      btn.classList.toggle('open');
+      if (isOpen && !body.dataset.loaded) loadPdcsi(body, code);
+    });
+  }
+
+  function loadPdcsi(body, code, force) {
+    body.innerHTML = '<div class="pdcsi-loading">📡 종토방 분석 중... (10~30초)</div>';
+    fetch(PDCSI_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + PDCSI_ANON_KEY, 'apikey': PDCSI_ANON_KEY },
+      body: JSON.stringify({ stock_code: code, force_refresh: !!force })
+    }).then(function (resp) {
+      if (!resp.ok) return resp.text().then(function (t) { throw new Error('HTTP ' + resp.status + ': ' + t.slice(0, 200)); });
+      return resp.json();
+    }).then(function (d) {
+      body.dataset.loaded = '1';
+      renderPdcsi(body, d, code);
+    }).catch(function (e) {
+      body.innerHTML = '<div class="pdcsi-error">❌ ' + esc(e.message || e) + '</div>';
+    });
+  }
+
+  function renderPdcsi(container, d, code) {
+    var verdict = String(d.verdict || 'WAIT').toUpperCase();
+    var vc = 'wait';
+    if (verdict.indexOf('BUY') >= 0) vc = 'buy';
+    else if (verdict.indexOf('EXIT') >= 0 || verdict.indexOf('AVOID') >= 0) vc = 'exit';
+    else if (verdict.indexOf('WATCH') >= 0 || verdict.indexOf('PARTIAL') >= 0) vc = 'warn';
+    var eu = d.euphoria || 0, pa = d.panic || 0, di = d.distrust || 0, sh = d.shilling || 0;
+    var adj = (typeof d.pdcsi_adjusted === 'number' && d.pdcsi_adjusted !== d.pdcsi);
+    var cached = d._cached ? '· 캐시' : '';
+
+    var h = '';
+    h += '<div class="pdcsi-score-row">';
+    h += '<div class="pdcsi-score-big">' + (d.pdcsi != null ? d.pdcsi : '-') + '</div>';
+    if (adj) h += '<div class="pdcsi-score-adj">학술보정 <strong>' + d.pdcsi_adjusted + '</strong></div>';
+    h += '<span class="pdcsi-verdict ' + vc + '">' + esc(verdict) + '</span>';
+    h += '<button type="button" class="pdcsi-refresh" data-refresh="1">↻ 새로</button>';
+    h += '</div>';
+    h += '<div class="pdcsi-bars">';
+    h += '<div class="pdcsi-bar-row"><span class="pdcsi-bar-label">환희</span><div class="pdcsi-bar-track"><div class="pdcsi-bar-fill euphoria" style="width:' + eu + '%"></div></div><span class="pdcsi-bar-val">' + eu + '</span></div>';
+    h += '<div class="pdcsi-bar-row"><span class="pdcsi-bar-label">공포</span><div class="pdcsi-bar-track"><div class="pdcsi-bar-fill panic" style="width:' + pa + '%"></div></div><span class="pdcsi-bar-val">' + pa + '</span></div>';
+    h += '<div class="pdcsi-bar-row"><span class="pdcsi-bar-label">불신</span><div class="pdcsi-bar-track"><div class="pdcsi-bar-fill distrust" style="width:' + di + '%"></div></div><span class="pdcsi-bar-val">' + di + '</span></div>';
+    h += '<div class="pdcsi-bar-row"><span class="pdcsi-bar-label">선동</span><div class="pdcsi-bar-track"><div class="pdcsi-bar-fill shilling" style="width:' + sh + '%"></div></div><span class="pdcsi-bar-val">' + sh + '</span></div>';
+    h += '</div>';
+    h += '<div class="pdcsi-meta">활동성 <strong>' + esc(d.velocity_label || '-') + '</strong> (' + (d.velocity_score || 0) + '점) · 게시글 ' + (d.post_count || 0) + '건 · 상태 ' + esc(d.status || '-') + ' ' + cached;
+    if (d.enhancement_note) h += '<br>💡 ' + esc(d.enhancement_note);
+    h += '</div>';
+    container.innerHTML = h;
+
+    var rb = container.querySelector('[data-refresh="1"]');
+    if (rb) rb.addEventListener('click', function () { container.dataset.loaded = ''; loadPdcsi(container, code, true); });
+  }
+
+  function scan(root) {
+    var mounts = (root || document).querySelectorAll('.pdcsi-mount');
+    for (var i = 0; i < mounts.length; i++) renderMount(mounts[i]);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { scan(document); });
+  else scan(document);
+
+  var mo = new MutationObserver(function (muts) {
+    for (var i = 0; i < muts.length; i++) {
+      var m = muts[i];
+      for (var j = 0; j < m.addedNodes.length; j++) {
+        var n = m.addedNodes[j];
+        if (n.nodeType !== 1) continue;
+        if (n.classList && n.classList.contains('pdcsi-mount')) renderMount(n);
+        else if (n.querySelectorAll) scan(n);
+      }
+    }
+  });
+  mo.observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script>

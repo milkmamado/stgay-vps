@@ -815,7 +815,6 @@ body {
                 var calcId = 'calc-' + (item.code || idx);
                 var matchedStock = techMap[item.code] || {}; var bHigh = (matchedStock.swing && matchedStock.swing.box_high) || '';
                 var bLow = (matchedStock.swing && matchedStock.swing.box_low) || '';
-                html += '<div class="pdcsi-mount" data-code="' + (item.code || '') + '"></div>';
                 var rangeText = (bHigh && bLow) ? (Number(bLow).toLocaleString() + '원 ~ ' + Number(bHigh).toLocaleString() + '원') : '';
                 html += '<div class="calc-section">';
                 html += '<button class="calc-toggle" onclick="toggleCalc(\'' + calcId + '\')">🧮 매매 계산기</button>';
@@ -1097,6 +1096,5 @@ body {
     }
 
 </script>
-{% include 'pdcsi_widget.html' %}
 </body>
 </html>

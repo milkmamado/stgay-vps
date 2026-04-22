@@ -1,0 +1,260 @@
+<!-- PDCSI_WIDGET v2 - 풀 UI (Lovable 페이지와 동일) -->
+<style>
+.pdcsi-section { margin-top: 12px; border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 10px; background: linear-gradient(135deg, rgba(168, 85, 247, 0.05), rgba(236, 72, 153, 0.05)); overflow: hidden; }
+.pdcsi-toggle { width: 100%; padding: 10px 14px; background: transparent; border: none; color: #c084fc; font-weight: 700; font-size: 13px; text-align: left; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+.pdcsi-toggle:hover { background: rgba(168, 85, 247, 0.08); }
+.pdcsi-toggle .pdcsi-arrow { transition: transform 0.2s; }
+.pdcsi-toggle.open .pdcsi-arrow { transform: rotate(90deg); }
+.pdcsi-body { display: none; padding: 14px; border-top: 1px solid rgba(168, 85, 247, 0.2); background: rgba(15, 15, 25, 0.4); }
+.pdcsi-body.open { display: block; }
+.pdcsi-loading { text-align: center; padding: 16px; color: #94a3b8; font-size: 12px; }
+.pdcsi-error { color: #f87171; font-size: 12px; padding: 8px; }
+
+/* 메인 카드 */
+.pdcsi-card { background: rgba(30, 30, 45, 0.5); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px; margin-bottom: 10px; }
+.pdcsi-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.pdcsi-stock-line { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.pdcsi-stock-code { font-family: monospace; font-size: 12px; color: #94a3b8; }
+.pdcsi-stock-name { font-size: 16px; font-weight: 700; color: #fff; }
+.pdcsi-status-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; color: #fff; }
+.pdcsi-score-cell { text-align: right; }
+.pdcsi-score-num { font-size: 36px; font-weight: 900; color: #fff; line-height: 1; font-variant-numeric: tabular-nums; }
+.pdcsi-score-lbl { font-size: 10px; color: #94a3b8; margin-top: 2px; }
+.pdcsi-verdict-box { background: rgba(168, 85, 247, 0.08); border-left: 3px solid #a855f7; padding: 8px 10px; border-radius: 4px; font-size: 12px; color: #e2e8f0; line-height: 1.5; margin-bottom: 12px; }
+.pdcsi-meta-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.pdcsi-meta-cell { background: rgba(255,255,255,0.03); padding: 8px; border-radius: 4px; }
+.pdcsi-meta-lbl { font-size: 10px; color: #94a3b8; }
+.pdcsi-meta-val { font-size: 12px; font-weight: 600; color: #e2e8f0; margin-top: 2px; }
+.pdcsi-refresh { background: transparent; border: 1px solid rgba(168, 85, 247, 0.3); color: #c084fc; padding: 4px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; }
+.pdcsi-refresh:hover { background: rgba(168, 85, 247, 0.1); }
+
+/* 4분면 매트릭스 */
+.pdcsi-matrix-title { font-size: 13px; font-weight: 600; color: #e2e8f0; margin-bottom: 4px; }
+.pdcsi-matrix-sub { font-size: 11px; color: #94a3b8; margin-bottom: 10px; }
+.pdcsi-matrix { width: 100%; border-collapse: collapse; font-size: 11px; }
+.pdcsi-matrix th { padding: 6px; color: #94a3b8; font-weight: 500; text-align: center; }
+.pdcsi-matrix td { padding: 10px 6px; border: 1px solid rgba(255,255,255,0.08); text-align: center; background: rgba(255,255,255,0.02); color: #94a3b8; transition: all 0.2s; }
+.pdcsi-matrix td.row-lbl { color: #94a3b8; font-weight: 500; text-align: right; border: none; padding-right: 10px; background: transparent; }
+.pdcsi-matrix td.active { color: #fff; font-weight: 700; transform: scale(1.05); box-shadow: 0 4px 12px rgba(0,0,0,0.3); position: relative; }
+.pdcsi-matrix td.active::after { content: ''; position: absolute; inset: -2px; border: 2px solid #a855f7; border-radius: 4px; pointer-events: none; }
+.pdcsi-cell-emoji { font-size: 16px; }
+.pdcsi-cell-lbl { font-size: 10px; margin-top: 2px; }
+
+/* 4지표 막대 */
+.pdcsi-bars-title { font-size: 13px; font-weight: 600; color: #e2e8f0; margin-bottom: 10px; }
+.pdcsi-bar-item { margin-bottom: 10px; }
+.pdcsi-bar-head { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: #e2e8f0; }
+.pdcsi-bar-val-wrap { font-family: monospace; font-weight: 600; }
+.pdcsi-bar-note { color: #64748b; font-size: 10px; margin-left: 4px; }
+.pdcsi-bar-track { height: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; }
+.pdcsi-bar-fill { height: 100%; transition: width 0.4s; }
+
+/* 색상 */
+.bg-emerald { background: #10b981; }
+.bg-emerald-d { background: #059669; }
+.bg-slate { background: #64748b; }
+.bg-slate-l { background: #94a3b8; }
+.bg-rose { background: #e11d48; }
+.bg-amber { background: #f59e0b; }
+.bg-blue { background: #3b82f6; }
+.bg-orange { background: #f97316; }
+.bg-red { background: #dc2626; }
+
+.pdcsi-foot { font-size: 10px; color: #64748b; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05); }
+</style>
+
+<script>
+(function () {
+  var PDCSI_API_URL = "https://lbpkxtvxmwgxlklprhuv.supabase.co/functions/v1/pdcsi-analyze";
+  var PDCSI_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxicGt4dHZ4bXdneGxrbHByaHV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNTMzMTAsImV4cCI6MjA5MTgyOTMxMH0.XHjyPztUnrSOil482WPkfVz7IKXtgS3KmaX3a27KtgM";
+
+  var STATUS_META = {
+    BOTTOM:        { label: '침체기 바닥',       cls: 'bg-emerald-d', emoji: '🟢' },
+    IGNORED:       { label: '소외 · 무관심',     cls: 'bg-slate',     emoji: '⚪' },
+    SUSPECT_PUMP:  { label: '작전 의심',         cls: 'bg-rose',      emoji: '🚨' },
+    SWEET_SPOT:    { label: 'Sweet Spot · 매집', cls: 'bg-emerald',   emoji: '🟢' },
+    NEUTRAL_WATCH: { label: '중립 관망',         cls: 'bg-slate-l',   emoji: '🟡' },
+    EARLY_HEAT:    { label: '과열 초기',         cls: 'bg-amber',     emoji: '🟠' },
+    PANIC:         { label: '공포 · 투매',       cls: 'bg-blue',      emoji: '🔵' },
+    HEATED:        { label: '과열기 · 진입금지', cls: 'bg-orange',    emoji: '🟠' },
+    MANIA:         { label: '광기 · 상투',       cls: 'bg-red',       emoji: '🔴' }
+  };
+  var VERDICT_KO = {
+    BUY_VALUE: '🟢 가치 분석 후 매수 검토 — 대중 무관심 + 의심 섞인 바닥',
+    WAIT_CATALYST: '⚪ 재료 발생까지 관망 — 시장에서 잊혀진 종목',
+    AVOID_THIN_PUMP: '🚨 작전 의심 — 거래 적은데 띄움. 진입 금지',
+    GOOD_TO_SWING: '✅ 진입 적기 — 적정 활동성 + 의심 톤. Sweet Spot',
+    WAIT_SIGNAL: '🟡 명확한 신호 대기 — 활동성·감성 모두 중립',
+    WAIT_PULLBACK: '🟠 눌림목 대기 — 이미 알려진 재료로 분위기 상승 중',
+    PARTIAL_BUY_DIP: '🔵 분할 매수 검토 — 패닉 셀, 단기 낙폭과대 가능성',
+    DO_NOT_ENTER: '🟠 진입 금지 — 활발하지만 방향성 불명',
+    DANGER_EXIT: '🔴 탈출 — 광기·찬티 도배. 설거지 구간',
+    PRIME_BUY_CONTRARIAN: '💎 역발상 최강 매수 — 의심↑ + 환희↓ + 선동 없음. 진짜 매집 구간',
+    TRUE_PANIC_BOTTOM_BUY: '🩸 진짜 패닉 바닥 — 폭발적 패닉 셀. 분할매수 강신호',
+    DANGER_PUMP_DUMP: '☠️ 펌프앤덤프 — 광기+선동 동시 폭주. 즉시 탈출'
+  };
+  var ACTIVITY_KO = { LOW: '낮음', MODERATE: '중간', HIGH: '높음' };
+  var SENTIMENT_KO = { NEGATIVE: '의심·공포', NEUTRAL: '중립', POSITIVE: '환희·찬티' };
+  var MATRIX = [
+    { a: 'HIGH',     s: 'NEGATIVE', st: 'PANIC',         short: '공포·투매' },
+    { a: 'HIGH',     s: 'NEUTRAL',  st: 'HEATED',        short: '과열' },
+    { a: 'HIGH',     s: 'POSITIVE', st: 'MANIA',         short: '광기·상투' },
+    { a: 'MODERATE', s: 'NEGATIVE', st: 'SWEET_SPOT',    short: 'Sweet Spot' },
+    { a: 'MODERATE', s: 'NEUTRAL',  st: 'NEUTRAL_WATCH', short: '관망' },
+    { a: 'MODERATE', s: 'POSITIVE', st: 'EARLY_HEAT',    short: '과열 초기' },
+    { a: 'LOW',      s: 'NEGATIVE', st: 'BOTTOM',        short: '바닥' },
+    { a: 'LOW',      s: 'NEUTRAL',  st: 'IGNORED',       short: '소외' },
+    { a: 'LOW',      s: 'POSITIVE', st: 'SUSPECT_PUMP',  short: '작전 의심' }
+  ];
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+
+  function renderMount(mount) {
+    if (mount.dataset.pdcsiInit === '1') return;
+    mount.dataset.pdcsiInit = '1';
+    var code = mount.getAttribute('data-code') || '';
+    if (!code) return;
+    var section = document.createElement('div');
+    section.className = 'pdcsi-section';
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pdcsi-toggle';
+    btn.innerHTML = '<span>🐷🐶 PDCSI 개돼지 지수 (종토방 군중심리)</span><span class="pdcsi-arrow">▶</span>';
+    var body = document.createElement('div');
+    body.className = 'pdcsi-body';
+    section.appendChild(btn);
+    section.appendChild(body);
+    mount.appendChild(section);
+
+    btn.addEventListener('click', function () {
+      var isOpen = body.classList.toggle('open');
+      btn.classList.toggle('open');
+      if (isOpen && !body.dataset.loaded) loadPdcsi(body, code);
+    });
+  }
+
+  function loadPdcsi(body, code, force) {
+    body.innerHTML = '<div class="pdcsi-loading">📡 종토방 분석 중... (10~30초)</div>';
+    fetch(PDCSI_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + PDCSI_ANON_KEY, 'apikey': PDCSI_ANON_KEY },
+      body: JSON.stringify({ stock_code: code, force_refresh: !!force })
+    }).then(function (resp) {
+      if (!resp.ok) return resp.text().then(function (t) { throw new Error('HTTP ' + resp.status + ': ' + t.slice(0, 200)); });
+      return resp.json();
+    }).then(function (d) {
+      body.dataset.loaded = '1';
+      renderPdcsi(body, d, code);
+    }).catch(function (e) {
+      body.innerHTML = '<div class="pdcsi-error">❌ ' + esc(e.message || e) + '</div>';
+    });
+  }
+
+  function renderPdcsi(container, d, code) {
+    var statusKey = String(d.status || '').toUpperCase();
+    var meta = STATUS_META[statusKey] || { label: statusKey || '-', cls: 'bg-slate', emoji: '·' };
+    var verdictKey = String(d.verdict || '').toUpperCase();
+    var verdictKo = VERDICT_KO[verdictKey] || verdictKey;
+    var velocityLabel = d.velocity_label || d.velocity || '-';
+    var actKo = ACTIVITY_KO[d.activity] || d.activity || '-';
+    var sentKo = SENTIMENT_KO[d.sentiment_class] || d.sentiment_class || '-';
+    var cached = d._cached ? ' · 캐시' : '';
+
+    var h = '';
+
+    // 메인 카드
+    h += '<div class="pdcsi-card">';
+    h += '<div class="pdcsi-head">';
+    h += '<div>';
+    h += '<div class="pdcsi-stock-line"><span class="pdcsi-stock-code">' + esc(d.stock_code || code) + '</span>';
+    if (d.stock_name) h += '<span class="pdcsi-stock-name">' + esc(d.stock_name) + '</span>';
+    h += '</div>';
+    h += '<span class="pdcsi-status-badge ' + meta.cls + '">' + meta.emoji + ' ' + esc(meta.label) + '</span>';
+    h += '</div>';
+    h += '<div class="pdcsi-score-cell">';
+    h += '<div class="pdcsi-score-num">' + (d.pdcsi != null ? d.pdcsi : '-') + '</div>';
+    h += '<div class="pdcsi-score-lbl">위험도 / 100</div>';
+    h += '<button type="button" class="pdcsi-refresh" data-refresh="1" style="margin-top:6px;">↻ 새로고침</button>';
+    h += '</div>';
+    h += '</div>';
+    h += '<div class="pdcsi-verdict-box">' + esc(verdictKo) + '</div>';
+    h += '<div class="pdcsi-meta-grid">';
+    h += '<div class="pdcsi-meta-cell"><div class="pdcsi-meta-lbl">활동성</div><div class="pdcsi-meta-val">' + esc(actKo) + ' (' + (d.velocity_score || 0) + '점)</div></div>';
+    h += '<div class="pdcsi-meta-cell"><div class="pdcsi-meta-lbl">감성</div><div class="pdcsi-meta-val">' + esc(sentKo) + '</div></div>';
+    h += '<div class="pdcsi-meta-cell"><div class="pdcsi-meta-lbl">게시글</div><div class="pdcsi-meta-val">' + (d.post_count || 0) + '개 · 시당 ' + (d.posts_per_hour || 0) + '</div></div>';
+    h += '</div>';
+    h += '</div>';
+
+    // 4분면 매트릭스
+    h += '<div class="pdcsi-card">';
+    h += '<div class="pdcsi-matrix-title">4분면 매트릭스 (현재 위치)</div>';
+    h += '<div class="pdcsi-matrix-sub">활동성(세로) × 감성(가로) — 현재 종목은 형광색 칸</div>';
+    h += '<table class="pdcsi-matrix"><thead><tr><th></th><th>의심·공포</th><th>중립</th><th>환희·찬티</th></tr></thead><tbody>';
+    var rows = ['HIGH', 'MODERATE', 'LOW'];
+    var cols = ['NEGATIVE', 'NEUTRAL', 'POSITIVE'];
+    for (var i = 0; i < rows.length; i++) {
+      h += '<tr><td class="row-lbl">활동 ' + ACTIVITY_KO[rows[i]] + '</td>';
+      for (var j = 0; j < cols.length; j++) {
+        var cell = null;
+        for (var k = 0; k < MATRIX.length; k++) if (MATRIX[k].a === rows[i] && MATRIX[k].s === cols[j]) cell = MATRIX[k];
+        var cm = STATUS_META[cell.st];
+        var isActive = (d.activity === rows[i] && d.sentiment_class === cols[j]);
+        h += '<td class="' + (isActive ? 'active ' + cm.cls : '') + '">';
+        h += '<div class="pdcsi-cell-emoji">' + cm.emoji + '</div>';
+        h += '<div class="pdcsi-cell-lbl">' + esc(cell.short) + '</div>';
+        h += '</td>';
+      }
+      h += '</tr>';
+    }
+    h += '</tbody></table>';
+    h += '</div>';
+
+    // 4지표 막대
+    var indicators = [
+      { k: 'euphoria', label: '🔥 Euphoria (광기)', val: d.euphoria || 0, cls: 'bg-red', note: '60↑ → POSITIVE' },
+      { k: 'shilling', label: '📢 Shilling (선동)', val: d.shilling || 0, cls: 'bg-orange', note: '50↑ → POSITIVE' },
+      { k: 'distrust', label: '🤔 Distrust (의심) ★Sweet Spot 신호', val: d.distrust || 0, cls: 'bg-emerald', note: '50↑ → NEGATIVE' },
+      { k: 'panic', label: '😱 Panic (패닉)', val: d.panic || 0, cls: 'bg-blue', note: '50↑ → NEGATIVE' }
+    ];
+    h += '<div class="pdcsi-card">';
+    h += '<div class="pdcsi-bars-title">감성 4지표 (AI 추출)</div>';
+    for (var n = 0; n < indicators.length; n++) {
+      var m = indicators[n];
+      h += '<div class="pdcsi-bar-item">';
+      h += '<div class="pdcsi-bar-head"><span>' + m.label + '</span><span class="pdcsi-bar-val-wrap">' + m.val + '<span class="pdcsi-bar-note">' + m.note + '</span></span></div>';
+      h += '<div class="pdcsi-bar-track"><div class="pdcsi-bar-fill ' + m.cls + '" style="width:' + m.val + '%"></div></div>';
+      h += '</div>';
+    }
+    h += '<div class="pdcsi-foot">활동성 ' + esc(velocityLabel) + ' · ' + (d.post_count || 0) + '건' + cached;
+    if (d.enhancement_note) h += ' · 💡 ' + esc(d.enhancement_note);
+    h += '</div>';
+    h += '</div>';
+
+    container.innerHTML = h;
+
+    var rb = container.querySelector('[data-refresh="1"]');
+    if (rb) rb.addEventListener('click', function () { container.dataset.loaded = ''; loadPdcsi(container, code, true); });
+  }
+
+  function scan(root) {
+    var mounts = (root || document).querySelectorAll('.pdcsi-mount');
+    for (var i = 0; i < mounts.length; i++) renderMount(mounts[i]);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { scan(document); });
+  else scan(document);
+
+  var mo = new MutationObserver(function (muts) {
+    for (var i = 0; i < muts.length; i++) {
+      var m = muts[i];
+      for (var j = 0; j < m.addedNodes.length; j++) {
+        var n = m.addedNodes[j];
+        if (n.nodeType !== 1) continue;
+        if (n.classList && n.classList.contains('pdcsi-mount')) renderMount(n);
+        else if (n.querySelectorAll) scan(n);
+      }
+    }
+  });
+  mo.observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script>
