@@ -10,3 +10,7 @@ venv/
 node_modules/
 __sessions__/
 .cache/
+*.bak
+*.bak.*
+*.save
+backups/
