@@ -292,13 +292,15 @@ def analyze_supply_demand(investor_data):
         score += 1
         signals.append(f"기관 5일 순매수 {i5:+,}주")
 
-    if f5 > 0 and i5 > 0:
+    # 쌍끌이/동반매도 노이즈 필터: 양쪽 모두 최소 1만주 이상일 때만
+    MIN_NET = 10000
+    if f5 > MIN_NET and i5 > MIN_NET:
         score += 1
-        signals.append("⚡ 외국인+기관 쌍끌이 매수")
+        signals.append(f"⚡ 외국인+기관 쌍끌이 매수 (외 {f5:+,} / 기 {i5:+,})")
 
-    if f5 < 0 and i5 < 0:
+    if f5 < -MIN_NET and i5 < -MIN_NET:
         score -= 1
-        signals.append("⚠️ 외국인+기관 동반 매도")
+        signals.append(f"⚠️ 외국인+기관 동반 매도 (외 {f5:+,} / 기 {i5:+,})")
 
     return {
         'score': score,
