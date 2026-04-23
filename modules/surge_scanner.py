@@ -281,8 +281,13 @@ def _calculate_score(stock):
 
 
 
+
 def _calc_scalping_levels(stock_mod, code, day_high, day_low, day_close):
-    """분봉(5분봉) 기반 스캘핑 진입/목표/손절. 실패 시 일봉 fallback."""
+    """
+    현재가 기준 스캘핑 진입/목표/손절 산출.
+    - 장중 분봉이 있으면: 5분봉 마지막 종가(current_price) 기준
+    - 분봉 실패 시: 일봉 종가(day_close)를 현재가 fallback 으로 사용
+    """
     try:
         from datetime import datetime
         today = datetime.now().strftime("%Y%m%d")
@@ -290,34 +295,63 @@ def _calc_scalping_levels(stock_mod, code, day_high, day_low, day_close):
         if df is not None and len(df) > 5:
             tp = (df['고가'] + df['저가'] + df['종가']) / 3
             vwap = (tp * df['거래량']).cumsum() / df['거래량'].cumsum()
+            current_price = float(df['종가'].iloc[-1])
             vwap_now = float(vwap.iloc[-1])
-            recent_low = float(df['저가'].tail(6).min())
-            day_hi = float(df['고가'].max())
-            entry_low = round(max(recent_low, vwap_now * 0.995))
-            entry_high = round(vwap_now * 1.005)
+
+            # 현재가 기준, 너무 추격되지 않게 VWAP와 현재가 중 더 낮은 값 근처에서 진입
+            anchor = min(current_price, vwap_now)
+            entry_low = round(anchor * 0.995)     # -0.5%
+            entry_high = round(current_price)     # 현재가 부근
             if entry_low >= entry_high:
-                entry_high = round(entry_low * 1.005)
-            target1 = round(day_hi)
-            target2 = round(day_hi * 1.03)
-            stop = round(recent_low * 0.98)
+                entry_low = round(current_price * 0.992)
+                entry_high = round(current_price)
+
+            stop = round(current_price * 0.98)    # -2%
+            target1 = round(current_price * 1.03) # +3%
+            target2 = round(current_price * 1.05) # +5%
+
             mid = (entry_low + entry_high) / 2
             rr = round((target1 - mid) / max(mid - stop, 1), 2)
-            return {'entry_low':entry_low,'entry_high':entry_high,'target1':target1,
-                    'target2':target2,'stop':stop,'rr_ratio':rr,
-                    'basis':'5분봉 VWAP+지지','vwap':round(vwap_now)}
+
+            return {
+                'entry_low': entry_low,
+                'entry_high': entry_high,
+                'target1': target1,
+                'target2': target2,
+                'stop': stop,
+                'rr_ratio': rr,
+                'basis': '5분봉 현재가 기준',
+                'current_price': round(current_price),
+                'vwap': round(vwap_now),
+            }
     except Exception as e:
         logger.warning(f"  분봉 산출 실패 {code}: {e}")
-    entry_low = round(day_low)
-    entry_high = round((day_low + day_close) / 2)
+
+    # fallback: 현재가 = 일봉 종가로 간주
+    current_price = float(day_close)
+    entry_low = round(current_price * 0.995)      # -0.5%
+    entry_high = round(current_price)             # 현재가
     if entry_low >= entry_high:
-        entry_high = round(entry_low * 1.005)
-    target1 = round(day_high)
-    target2 = round(day_high * 1.03)
-    stop = round(day_low * 0.98)
+        entry_low = round(current_price * 0.992)
+        entry_high = round(current_price)
+
+    stop = round(current_price * 0.98)            # -2%
+    target1 = round(current_price * 1.03)         # +3%
+    target2 = round(current_price * 1.05)         # +5%
+
     mid = (entry_low + entry_high) / 2
     rr = round((target1 - mid) / max(mid - stop, 1), 2)
-    return {'entry_low':entry_low,'entry_high':entry_high,'target1':target1,
-            'target2':target2,'stop':stop,'rr_ratio':rr,'basis':'일봉 fallback'}
+
+    return {
+        'entry_low': entry_low,
+        'entry_high': entry_high,
+        'target1': target1,
+        'target2': target2,
+        'stop': stop,
+        'rr_ratio': rr,
+        'basis': '현재가 기준 fallback',
+        'current_price': round(current_price),
+    }
 
 
 def run_surge_scan(crawler, log_fn=None):

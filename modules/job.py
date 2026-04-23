@@ -1,4 +1,5 @@
 import threading
+from modules.surge_scanner import run_surge_scan
 import time
 import json
 import math
@@ -339,6 +340,25 @@ def run_crawl_job():
             )
         )
 
+        # ===== 급등 테마 대장주 스캔 (85→95%) =====
+        surge_result = None
+        try:
+            with state_lock:
+                crawl_state['phase'] = '급등 테마 스캔 중'
+                crawl_state['percent'] = 90
+            log(f"\n📈 급등 테마 대장주 스캔 시작...")
+            # 인포스탁 캐시 공유 위해 동일 crawler 인스턴스 재사용
+            surge_result = run_surge_scan(crawler, log)
+            with state_lock:
+                crawl_state['percent'] = 95
+            if surge_result and surge_result.get('leaders'):
+                log(f"✅ 급등 대장주 {len(surge_result['leaders'])}개 검출")
+            else:
+                log(f"  → 급등 대장주 없음 (오늘 시장 잠잠)")
+        except Exception as _surge_e:
+            log(f"⚠️ 급등 스캐너 오류 (기존 결과는 정상 출력): {_surge_e}")
+            surge_result = None
+
         with state_lock:
             crawl_state['phase'] = '완료'
             crawl_state['percent'] = 100
@@ -359,6 +379,7 @@ def run_crawl_job():
                     'grade_d': len([s for s in sorted_stocks if s.get('swing', {}).get('grade') == 'D']),
                 },
                 'ai_analysis': ai_analysis,
+                'surge_leaders': surge_result,
             }
 
         a_count = crawl_state['result']['stocks_summary']['grade_a']
