@@ -282,6 +282,24 @@ def _calculate_score(stock):
 
 
 
+
+def _fetch_naver_realtime_price(code):
+    """네이버 모바일 시세 API로 실시간 현재가 조회. 실패 시 None."""
+    try:
+        import requests
+        url = f"https://m.stock.naver.com/api/stock/{code}/basic"
+        r = requests.get(url, timeout=3, headers={'User-Agent': 'Mozilla/5.0'})
+        if r.status_code == 200:
+            data = r.json()
+            price = data.get('closePrice') or data.get('tradePrice')
+            if price:
+                # "9,100" 형태 문자열 처리
+                return float(str(price).replace(',', ''))
+    except Exception as e:
+        logger.warning(f"  네이버 실시간 시세 실패 {code}: {e}")
+    return None
+
+
 def _calc_scalping_levels(stock_mod, code, day_high, day_low, day_close):
     """
     현재가 기준 스캘핑 진입/목표/손절 산출.
@@ -327,8 +345,15 @@ def _calc_scalping_levels(stock_mod, code, day_high, day_low, day_close):
     except Exception as e:
         logger.warning(f"  분봉 산출 실패 {code}: {e}")
 
-    # fallback: 현재가 = 일봉 종가로 간주
-    current_price = float(day_close)
+    # fallback: 네이버 실시간 시세 우선, 실패시 일봉 종가
+    realtime_price = _fetch_naver_realtime_price(code)
+    if realtime_price and realtime_price > 0:
+        current_price = realtime_price
+        basis_label = '네이버 실시간 현재가'
+    else:
+        current_price = float(day_close)
+        basis_label = '일봉 종가 fallback (실시간 실패)'
+
     entry_low = round(current_price * 0.995)      # -0.5%
     entry_high = round(current_price)             # 현재가
     if entry_low >= entry_high:
@@ -349,7 +374,7 @@ def _calc_scalping_levels(stock_mod, code, day_high, day_low, day_close):
         'target2': target2,
         'stop': stop,
         'rr_ratio': rr,
-        'basis': '현재가 기준 fallback',
+        'basis': basis_label,
         'current_price': round(current_price),
     }
 
