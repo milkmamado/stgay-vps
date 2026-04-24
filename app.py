@@ -48,9 +48,13 @@ def api_start():
     with state_lock:
         if crawl_state['running']:
             return jsonify({'error': '이미 실행 중입니다'}), 400
-    t = threading.Thread(target=run_crawl_job, daemon=True)
+    data = request.get_json(silent=True) or {}
+    mode = data.get('mode', 'all')
+    if mode not in ('all', 'swing', 'surge'):
+        mode = 'all'
+    t = threading.Thread(target=run_crawl_job, kwargs={'mode': mode}, daemon=True)
     t.start()
-    return jsonify({'ok': True})
+    return jsonify({'ok': True, 'mode': mode})
 
 @app.route('/stgay/api/status')
 @login_required
