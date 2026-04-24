@@ -283,6 +283,45 @@ def _calculate_score(stock):
 
 
 
+
+def _fetch_naver_5min_candles(code, count=78):
+    """네이버 차트 API로 당일 5분봉 받아오기. 실패시 None.
+    반환: [{'time', 'open', 'high', 'low', 'close', 'volume'}, ...]
+    """
+    try:
+        import requests, re
+        url = f"https://api.finance.naver.com/siseJson.naver?symbol={code}&requestType=1&count={count}&timeframe=5"
+        r = requests.get(url, timeout=5, headers={'User-Agent': 'Mozilla/5.0'})
+        if r.status_code != 200:
+            return None
+        # 응답이 JSON-like 이지만 single quote → 정규화
+        text = r.text.strip().replace("'", '"')
+        import json
+        rows = json.loads(text)
+        if not rows or len(rows) < 2:
+            return None
+        # rows[0] = header, rows[1:] = data
+        candles = []
+        for row in rows[1:]:
+            # [날짜, 시가, 고가, 저가, 종가, 거래량, 외인소진율]
+            candles.append({
+                'time': str(row[0]),
+                'open': float(row[1]),
+                'high': float(row[2]),
+                'low': float(row[3]),
+                'close': float(row[4]),
+                'volume': float(row[5]),
+            })
+        # 오늘 날짜만 필터 (YYYYMMDDHHMM)
+        from datetime import datetime
+        today = datetime.now().strftime("%Y%m%d")
+        today_candles = [c for c in candles if c['time'].startswith(today)]
+        return today_candles if today_candles else candles[-12:]  # 최근 1시간 fallback
+    except Exception as e:
+        print(f"[naver_5min] {code} 실패: {e}")
+        return None
+
+
 def _fetch_naver_realtime_price(code):
     """네이버 모바일 시세 API로 실시간 현재가 조회. 실패 시 None."""
     try:
@@ -302,81 +341,67 @@ def _fetch_naver_realtime_price(code):
 
 def _calc_scalping_levels(stock_mod, code, day_high, day_low, day_close):
     """
-    현재가 기준 스캘핑 진입/목표/손절 산출.
-    - 장중 분봉이 있으면: 5분봉 마지막 종가(current_price) 기준
-    - 분봉 실패 시: 일봉 종가(day_close)를 현재가 fallback 으로 사용
+    스캘핑 진입/목표/손절 산출.
+    우선순위: 네이버 5분봉 VWAP+지지 > 네이버 실시간 시세 > 일봉 fallback
     """
-    try:
-        from datetime import datetime
-        today = datetime.now().strftime("%Y%m%d")
-        df = stock_mod.get_market_ohlcv_by_date(today, today, code, "m")
-        if df is not None and len(df) > 5:
-            tp = (df['고가'] + df['저가'] + df['종가']) / 3
-            vwap = (tp * df['거래량']).cumsum() / df['거래량'].cumsum()
-            current_price = float(df['종가'].iloc[-1])
-            vwap_now = float(vwap.iloc[-1])
-
-            # 현재가 기준, 너무 추격되지 않게 VWAP와 현재가 중 더 낮은 값 근처에서 진입
-            anchor = min(current_price, vwap_now)
-            entry_low = round(anchor * 0.995)     # -0.5%
-            entry_high = round(current_price)     # 현재가 부근
-            if entry_low >= entry_high:
-                entry_low = round(current_price * 0.992)
-                entry_high = round(current_price)
-
-            stop = round(current_price * 0.98)    # -2%
-            target1 = round(current_price * 1.03) # +3%
-            target2 = round(current_price * 1.05) # +5%
-
-            mid = (entry_low + entry_high) / 2
-            rr = round((target1 - mid) / max(mid - stop, 1), 2)
-
-            return {
-                'entry_low': entry_low,
-                'entry_high': entry_high,
-                'target1': target1,
-                'target2': target2,
-                'stop': stop,
-                'rr_ratio': rr,
-                'basis': '5분봉 현재가 기준',
-                'current_price': round(current_price),
-                'vwap': round(vwap_now),
-            }
-    except Exception as e:
-        logger.warning(f"  분봉 산출 실패 {code}: {e}")
-
-    # fallback: 네이버 실시간 시세 우선, 실패시 일봉 종가
-    realtime_price = _fetch_naver_realtime_price(code)
-    if realtime_price and realtime_price > 0:
-        current_price = realtime_price
-        basis_label = '네이버 실시간 현재가'
-    else:
-        current_price = float(day_close)
-        basis_label = '일봉 종가 fallback (실시간 실패)'
-
-    entry_low = round(current_price * 0.995)      # -0.5%
-    entry_high = round(current_price)             # 현재가
-    if entry_low >= entry_high:
-        entry_low = round(current_price * 0.992)
+    candles = _fetch_naver_5min_candles(code, count=78)
+    
+    if candles and len(candles) >= 6:
+        # ✅ 진짜 5분봉 모드
+        typical_x_vol = sum(((c['high']+c['low']+c['close'])/3) * c['volume'] for c in candles)
+        total_vol = sum(c['volume'] for c in candles) or 1
+        vwap = typical_x_vol / total_vol
+        
+        recent6 = candles[-6:]  # 최근 30분
+        low_30m = min(c['low'] for c in recent6)
+        current_price = candles[-1]['close']
+        
+        entry_low = round(max(vwap, low_30m))
         entry_high = round(current_price)
-
-    stop = round(current_price * 0.98)            # -2%
-    target1 = round(current_price * 1.03)         # +3%
-    target2 = round(current_price * 1.05)         # +5%
-
-    mid = (entry_low + entry_high) / 2
+        if entry_high <= entry_low:
+            entry_high = round(entry_low * 1.003)
+        
+        mid = (entry_low + entry_high) / 2
+        stop = round(entry_low * 0.985)
+        target1 = round(max(day_high, current_price * 1.015))
+        target2 = round(mid * 1.03)
+        rr = round((target1 - mid) / max(mid - stop, 1), 2)
+        
+        return {
+            'entry_low': entry_low, 'entry_high': entry_high,
+            'target1': target1, 'target2': target2, 'stop': stop,
+            'rr_ratio': rr,
+            'basis': '네이버 5분봉 VWAP+지지',
+            'vwap': round(vwap),
+            'current_price': round(current_price),
+            'candle_count': len(candles),
+        }
+    
+    # 🔻 실시간 시세 fallback
+    rt_price = _fetch_naver_realtime_price(code)
+    if rt_price:
+        current_price = rt_price
+        basis = '네이버 실시간 현재가'
+    else:
+        current_price = day_close
+        basis = '일봉 종가 fallback'
+    
+    mid = current_price
+    entry_low = round(mid * 0.995)
+    entry_high = round(mid * 1.002)
+    stop = round(entry_low * 0.985)
+    target1 = round(max(day_high, mid * 1.02))
+    target2 = round(mid * 1.03)
     rr = round((target1 - mid) / max(mid - stop, 1), 2)
-
+    
     return {
-        'entry_low': entry_low,
-        'entry_high': entry_high,
-        'target1': target1,
-        'target2': target2,
-        'stop': stop,
-        'rr_ratio': rr,
-        'basis': basis_label,
+        'entry_low': entry_low, 'entry_high': entry_high,
+        'target1': target1, 'target2': target2, 'stop': stop,
+        'rr_ratio': rr, 'basis': basis,
         'current_price': round(current_price),
     }
+
+
 
 
 def run_surge_scan(crawler, log_fn=None):
