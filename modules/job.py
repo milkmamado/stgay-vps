@@ -21,8 +21,10 @@ crawl_state = {
 }
 state_lock = threading.Lock()
 
-def run_crawl_job():
+def run_crawl_job(mode='all'):
     global crawl_state
+    run_swing = mode in ('all', 'swing')
+    run_surge = mode in ('all', 'surge')
     crawler = StockNewsCrawler()
     today = datetime.now().strftime("%Y%m%d")
 
@@ -201,7 +203,7 @@ def run_crawl_job():
 
         # Phase 6: AI 분석 (Claude)
         ai_analysis = None
-        if ANTHROPIC_API_KEY:
+        if ANTHROPIC_API_KEY and run_swing:
             with state_lock:
                 crawl_state['phase'] = 'AI 분석 중'
                 crawl_state['percent'] = 82
@@ -342,7 +344,11 @@ def run_crawl_job():
 
         # ===== 급등 테마 대장주 스캔 (85→95%) =====
         surge_result = None
+        if not run_surge:
+            log(f"\n⏭️  급등 테마 스캔 건너뜀 (모드: {mode})")
         try:
+            if not run_surge:
+                raise RuntimeError('__SKIP_SURGE__')
             with state_lock:
                 crawl_state['phase'] = '급등 테마 스캔 중'
                 crawl_state['percent'] = 90
@@ -356,7 +362,8 @@ def run_crawl_job():
             else:
                 log(f"  → 급등 대장주 없음 (오늘 시장 잠잠)")
         except Exception as _surge_e:
-            log(f"⚠️ 급등 스캐너 오류 (기존 결과는 정상 출력): {_surge_e}")
+            if str(_surge_e) != '__SKIP_SURGE__':
+                log(f"⚠️ 급등 스캐너 오류 (기존 결과는 정상 출력): {_surge_e}")
             surge_result = None
 
         with state_lock:
