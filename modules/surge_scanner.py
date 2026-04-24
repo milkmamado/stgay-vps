@@ -311,13 +311,19 @@ def _fetch_naver_5min_candles(code, count=390):
             if len(parts) < 6: continue
             t, o, h, l, c, v = parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]
             # null 값 스킵 (장 시작 전 호가만 있는 봉)
-            if 'null' in (o, h, l) or c == 'null': continue
+            # 종가가 null이면 진짜 빈 봉 → 스킵
+            if c == 'null' or c == '':
+                continue
             try:
+                cf = float(c)
+                # OHLC null 이면 종가로 채움 (네이버 1분봉 특성)
+                of = float(o) if o != 'null' else cf
+                hf = float(h) if h != 'null' else cf
+                lf = float(l) if l != 'null' else cf
+                vf = float(v) if v != 'null' else 0.0
                 candles.append({
-                    'time': t,
-                    'open': float(o), 'high': float(h),
-                    'low': float(l), 'close': float(c),
-                    'volume': float(v),
+                    'time': t, 'open': of, 'high': hf,
+                    'low': lf, 'close': cf, 'volume': vf,
                 })
             except ValueError:
                 continue
