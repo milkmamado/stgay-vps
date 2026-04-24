@@ -463,23 +463,6 @@ body {
 .calc-summary .sum-label { font-size: 11px; color: var(--text-dim); }
 .calc-summary .sum-value { font-size: 16px; font-weight: 600; margin-top: 4px; }
 
-
-/* === scgay-split: hide surge UI === */
-[data-mode="surge"],
-.mode-surge,
-.surge-section,
-#surge-section,
-#surgeSection,
-.surge-card,
-.surge-leaders,
-button[data-mode="surge"],
-input[name="mode"][value="surge"],
-input[name="mode"][value="surge"] + label,
-label[for*="surge"] {
-  display: none !important;
-}
-/* === /scgay-split === */
-
 </style>
 </head>
 <body>
@@ -495,7 +478,7 @@ label[for*="surge"] {
     </div>
 
     <div class="start-section">
-        <button id="startBtn" class="btn-start" onclick="startAnalysis()">🔍 분석 시작</button>
+        <button id="startBtn" class="btn-start" onclick="startAnalysis()">🔍 스윙 분석 시작</button>
     </div>
 
     <div id="progressSection" class="progress-section">
@@ -524,19 +507,12 @@ label[for*="surge"] {
         document.getElementById('resultArea').innerHTML = '';
         document.getElementById('downloadBtn').style.display = 'none';
 
-        const swing = true;
-        const surge = false;
-        const mode = 'swing';
-        fetch('/stgay/api/start', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({mode: mode})
-        })
+        fetch('/stgay/api/start', { method: 'POST' })
             .then(r => r.json())
             .then(() => { pollTimer = setInterval(pollStatus, 1500); })
             .catch(e => {
                 btn.disabled = false;
-                btn.textContent = '🔍 분석 시작';
+                btn.textContent = '🔍 스윙 분석 시작';
                 alert('시작 실패: ' + e);
             });
     }

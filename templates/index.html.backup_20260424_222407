@@ -463,23 +463,6 @@ body {
 .calc-summary .sum-label { font-size: 11px; color: var(--text-dim); }
 .calc-summary .sum-value { font-size: 16px; font-weight: 600; margin-top: 4px; }
 
-
-/* === scgay-split: hide surge UI === */
-[data-mode="surge"],
-.mode-surge,
-.surge-section,
-#surge-section,
-#surgeSection,
-.surge-card,
-.surge-leaders,
-button[data-mode="surge"],
-input[name="mode"][value="surge"],
-input[name="mode"][value="surge"] + label,
-label[for*="surge"] {
-  display: none !important;
-}
-/* === /scgay-split === */
-
 </style>
 </head>
 <body>
@@ -495,6 +478,16 @@ label[for*="surge"] {
     </div>
 
     <div class="start-section">
+        <div style="display:flex;gap:18px;justify-content:center;align-items:center;margin-bottom:14px;flex-wrap:wrap;font-size:14px;color:#cbd5e1">
+            <label style="cursor:pointer;display:flex;align-items:center;gap:6px">
+                <input type="checkbox" id="modeSwing" name="modeSwing" checked style="width:16px;height:16px;cursor:pointer">
+                <span>📊 단기 스윙 분석</span>
+            </label>
+            <label style="cursor:pointer;display:flex;align-items:center;gap:6px">
+                <input type="checkbox" id="modeSurge" name="modeSurge" checked style="width:16px;height:16px;cursor:pointer">
+                <span>🔥 급등 테마 대장주</span>
+            </label>
+        </div>
         <button id="startBtn" class="btn-start" onclick="startAnalysis()">🔍 분석 시작</button>
     </div>
 
@@ -524,9 +517,16 @@ label[for*="surge"] {
         document.getElementById('resultArea').innerHTML = '';
         document.getElementById('downloadBtn').style.display = 'none';
 
-        const swing = true;
-        const surge = false;
-        const mode = 'swing';
+        const swing = document.getElementById('modeSwing').checked;
+        const surge = document.getElementById('modeSurge').checked;
+        if (!swing && !surge) {
+            btn.disabled = false;
+            btn.textContent = '🔍 분석 시작';
+            document.getElementById('progressSection').style.display = 'none';
+            alert('최소 하나는 선택해주세요!');
+            return;
+        }
+        const mode = swing && surge ? 'all' : (swing ? 'swing' : 'surge');
         fetch('/stgay/api/start', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},

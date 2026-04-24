@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>scgay — 급등 대장주</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Pretendard', sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #e2e8f0; min-height: 100vh; padding: 24px;
+  }
+  .wrap { max-width: 1200px; margin: 0 auto; }
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 24px;
+  }
+  .logo { font-size: 24px; font-weight: 800; background: linear-gradient(135deg,#f59e0b,#ef4444); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .logout { color: #94a3b8; text-decoration: none; font-size: 13px; padding: 6px 14px; border-radius: 999px; background: rgba(255,255,255,0.05); }
+  .logout:hover { color: #fff; }
+  .grid { display: grid; gap: 20px; grid-template-columns: 1fr 1fr; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    background: rgba(255,255,255,0.04); backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.08); border-radius: 20px;
+    padding: 24px;
+  }
+  .card.full { grid-column: 1 / -1; }
+  h2 { font-size: 16px; font-weight: 700; margin-bottom: 16px; color: #f1f5f9; display: flex; align-items: center; gap: 8px; }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: rgba(245,158,11,0.15); color: #fbbf24; font-weight: 600; }
+  button.primary {
+    padding: 12px 24px; border-radius: 999px; border: none;
+    background: linear-gradient(135deg,#f59e0b,#ef4444); color: white;
+    font-weight: 700; cursor: pointer; font-size: 14px;
+    transition: transform 0.15s;
+  }
+  button.primary:hover { transform: translateY(-1px); }
+  button.primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  button.ghost {
+    padding: 10px 18px; border-radius: 999px;
+    background: rgba(255,255,255,0.06); color: #e2e8f0;
+    border: 1px solid rgba(255,255,255,0.1); cursor: pointer; font-weight: 600;
+  }
+  input.txt {
+    padding: 12px 16px; border-radius: 12px;
+    background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+    color: #fff; font-size: 15px; width: 180px;
+  }
+  input.txt:focus { outline: none; border-color: #f59e0b; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .progress { margin-top: 14px; font-size: 13px; color: #94a3b8; }
+  .bar { height: 6px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow: hidden; margin-top: 8px; }
+  .bar > div { height: 100%; background: linear-gradient(90deg,#f59e0b,#ef4444); transition: width 0.3s; }
+  .leader-card {
+    padding: 16px; border-radius: 14px; background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.06); margin-top: 12px;
+  }
+  .leader-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .leader-name { font-weight: 700; font-size: 16px; }
+  .leader-code { color: #64748b; font-size: 12px; margin-left: 6px; }
+  .pct-up { color: #f87171; font-weight: 700; }
+  .theme-tag { display: inline-block; font-size: 11px; padding: 3px 10px; border-radius: 999px; background: rgba(245,158,11,0.12); color: #fbbf24; margin-bottom: 8px; }
+  .scalp { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 10px; font-size: 12px; }
+  .scalp > div { background: rgba(255,255,255,0.03); padding: 8px; border-radius: 8px; text-align: center; }
+  .scalp .lbl { color: #64748b; font-size: 10px; margin-bottom: 2px; }
+  .scalp .val { font-weight: 700; color: #f1f5f9; }
+  .vwap-result { margin-top: 16px; padding: 16px; background: rgba(0,0,0,0.25); border-radius: 12px; display: none; }
+  .vwap-result.active { display: block; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+  th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  th { color: #94a3b8; font-weight: 600; font-size: 12px; }
+  tbody tr:hover { background: rgba(255,255,255,0.02); }
+  .empty { color: #64748b; padding: 24px; text-align: center; font-size: 13px; }
+  .warning { font-size: 12px; color: #fbbf24; margin-top: 8px; }
+  .basis-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: rgba(59,130,246,0.15); color: #93c5fd; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">⚡ scgay</div>
+    <a class="logout" href="/scgay/logout">로그아웃</a>
+  </header>
+
+  <div class="grid">
+    <!-- 1) 분석 섹션 -->
+    <div class="card full">
+      <h2>🔥 급등 대장주 분석 <span class="badge">+15% 누적</span></h2>
+      <div class="row">
+        <button class="primary" id="btn-scan">분석 시작</button>
+        <span class="progress" id="status">대기 중</span>
+      </div>
+      <div class="bar"><div id="bar" style="width:0%"></div></div>
+      <div id="leaders"></div>
+    </div>
+
+    <!-- 2) VWAP 조회 -->
+    <div class="card">
+      <h2>📊 종목 VWAP 조회</h2>
+      <div class="row">
+        <input class="txt" id="vwap-code" maxlength="6" placeholder="종목코드 (006340)">
+        <button class="primary" id="btn-vwap">조회</button>
+      </div>
+      <div class="vwap-result" id="vwap-out"></div>
+    </div>
+
+    <!-- 3) 아카이브 -->
+    <div class="card">
+      <h2>📁 분석 아카이브 <span class="badge" id="arc-count">0건</span></h2>
+      <div id="archive"><div class="empty">불러오는 중...</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const fmt = (n) => n == null ? '-' : Number(n).toLocaleString('ko-KR');
+
+// === 분석 ===
+let pollTimer = null;
+async function startScan() {
+  const btn = document.getElementById('btn-scan');
+  btn.disabled = true;
+  document.getElementById('status').textContent = '시작 중...';
+  try {
+    const r = await fetch('/scgay/api/scan', { method: 'POST' });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || '실패');
+    pollStatus();
+  } catch (e) {
+    alert('실패: ' + e.message);
+    btn.disabled = false;
+  }
+}
+function pollStatus() {
+  clearInterval(pollTimer);
+  pollTimer = setInterval(async () => {
+    const r = await fetch('/scgay/api/status');
+    const d = await r.json();
+    document.getElementById('status').textContent = `${d.phase || ''} · ${d.progress || ''}`;
+    document.getElementById('bar').style.width = (d.percent || 0) + '%';
+    if (!d.running) {
+      clearInterval(pollTimer);
+      document.getElementById('btn-scan').disabled = false;
+      if (d.has_result) loadResult();
+    }
+  }, 2000);
+}
+async function loadResult() {
+  const r = await fetch('/scgay/api/result');
+  if (!r.ok) return;
+  const d = await r.json();
+  renderLeaders(d);
+  loadArchive();
+}
+function renderLeaders(d) {
+  const el = document.getElementById('leaders');
+  const surge = (d || {}).surge_leaders || {};
+  const leaders = surge.leaders || [];
+  if (!leaders.length) {
+    el.innerHTML = '<div class="empty">대장주 없음 (조건 미충족)</div>';
+    return;
+  }
+  el.innerHTML = leaders.map(item => {
+    const L = item.leader || {};
+    const s = item.scalping || {};
+    return `
+      <div class="leader-card">
+        <span class="theme-tag">${item.theme_name || '-'} · ${item.theme_members_count || 0}종목</span>
+        <div class="leader-head">
+          <div>
+            <span class="leader-name">${L.name || '-'}</span>
+            <span class="leader-code">${L.code || ''}</span>
+          </div>
+          <div class="pct-up">+${(L.cum_return_pct || 0).toFixed(1)}%</div>
+        </div>
+        <div style="font-size:13px;color:#94a3b8">현재가 <b style="color:#f1f5f9">${fmt(s.current_price || L.price)}</b>원
+          · 시총 ${fmt(L.market_cap_eok)}억 · 거래량 x${(L.volume_ratio || 0).toFixed(1)}</div>
+        <div class="scalp">
+          <div><div class="lbl">진입↓</div><div class="val">${fmt(s.entry_low)}</div></div>
+          <div><div class="lbl">진입↑</div><div class="val">${fmt(s.entry_high)}</div></div>
+          <div><div class="lbl">목표1</div><div class="val">${fmt(s.target1)}</div></div>
+          <div><div class="lbl">손절</div><div class="val" style="color:#fb7185">${fmt(s.stop)}</div></div>
+          <div><div class="lbl">RR</div><div class="val">${s.rr_ratio || '-'}</div></div>
+        </div>
+        ${s.basis ? `<div style="margin-top:8px"><span class="basis-badge">${s.basis}</span></div>` : ''}
+        ${item.warning ? `<div class="warning">⚠️ ${item.warning}</div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+// === VWAP ===
+async function checkVwap() {
+  const code = document.getElementById('vwap-code').value.trim();
+  const out = document.getElementById('vwap-out');
+  out.classList.add('active');
+  out.innerHTML = '<div style="color:#94a3b8;font-size:13px">조회 중...</div>';
+  try {
+    const r = await fetch('/scgay/api/vwap?code=' + encodeURIComponent(code));
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || '실패');
+    out.innerHTML = `
+      <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+        <div><b style="font-size:18px">${d.code}</b> <span style="color:#94a3b8;font-size:12px">${d.updated_at}</span></div>
+        <div class="pct-up" style="font-size:18px">${fmt(d.current_price)}원</div>
+      </div>
+      <div class="scalp">
+        <div><div class="lbl">VWAP</div><div class="val">${fmt(d.vwap)}</div></div>
+        <div><div class="lbl">진입↓</div><div class="val">${fmt(d.entry_low)}</div></div>
+        <div><div class="lbl">진입↑</div><div class="val">${fmt(d.entry_high)}</div></div>
+        <div><div class="lbl">목표1</div><div class="val">${fmt(d.target1)}</div></div>
+        <div><div class="lbl">손절</div><div class="val" style="color:#fb7185">${fmt(d.stop)}</div></div>
+      </div>
+      <div style="margin-top:10px;font-size:12px;color:#94a3b8">RR ${d.rr_ratio} · 1분봉 ${d.candle_count}개 · ${d.basis}</div>`;
+  } catch (e) {
+    out.innerHTML = `<div style="color:#fb7185;font-size:13px">❌ ${e.message}</div>`;
+  }
+}
+
+// === 아카이브 ===
+async function loadArchive() {
+  const r = await fetch('/scgay/api/archive');
+  const d = await r.json();
+  document.getElementById('arc-count').textContent = (d.total || 0) + '건';
+  const el = document.getElementById('archive');
+  if (!d.items || !d.items.length) {
+    el.innerHTML = '<div class="empty">아직 아카이빙된 추천이 없어요</div>';
+    return;
+  }
+  el.innerHTML = `<table>
+    <thead><tr><th>날짜</th><th>종목</th><th>테마</th><th>진입↑</th><th>손절</th><th>RR</th></tr></thead>
+    <tbody>${d.items.map(it => `
+      <tr>
+        <td style="color:#94a3b8;font-size:11px">${(it.date || '').slice(5)}</td>
+        <td><b>${it.name}</b><br><span style="color:#64748b;font-size:10px">${it.code}</span></td>
+        <td style="font-size:11px;color:#fbbf24">${it.theme_name || '-'}</td>
+        <td>${fmt(it.entry_high)}</td>
+        <td style="color:#fb7185">${fmt(it.stop)}</td>
+        <td>${it.rr_ratio || '-'}</td>
+      </tr>`).join('')}</tbody></table>`;
+}
+
+document.getElementById('btn-scan').onclick = startScan;
+document.getElementById('btn-result').onclick = loadResult;
+document.getElementById('btn-vwap').onclick = checkVwap;
+document.getElementById('vwap-code').addEventListener('keydown', e => { if (e.key === 'Enter') checkVwap(); });
+
+// 초기 로드
+loadArchive();
+fetch('/scgay/api/status').then(r => r.json()).then(d => {
+  if (d.has_result) loadResult();
+  if (d.running) pollStatus();
+});
+</script>
+</body>
+</html>
