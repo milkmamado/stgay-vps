@@ -1,0 +1,47 @@
+[
+  {
+    "date": "2026-04-24",
+    "recorded_at": "2026-04-24 23:33:11",
+    "code": "006340",
+    "name": "대원전선",
+    "theme_name": "전력설비",
+    "price": 8140,
+    "cum_return_pct": 27.19,
+    "entry_low": 8940,
+    "entry_high": 9020,
+    "target1": 9155,
+    "stop": 8806,
+    "rr_ratio": 1.01,
+    "basis": "네이버 1분봉 VWAP+지지"
+  },
+  {
+    "date": "2026-04-24",
+    "recorded_at": "2026-04-24 23:33:11",
+    "code": "456040",
+    "name": "OCI",
+    "theme_name": "반도체 재료/부품",
+    "price": 137200,
+    "cum_return_pct": 39.71,
+    "entry_low": 146370,
+    "entry_high": 146809,
+    "target1": 147682,
+    "stop": 144174,
+    "rr_ratio": 0.45,
+    "basis": "네이버 1분봉 VWAP+지지"
+  },
+  {
+    "date": "2026-04-24",
+    "recorded_at": "2026-04-24 23:33:11",
+    "code": "006490",
+    "name": "인스코비",
+    "theme_name": "화장품",
+    "price": 481,
+    "cum_return_pct": 16.18,
+    "entry_low": 498,
+    "entry_high": 500,
+    "target1": 507,
+    "stop": 491,
+    "rr_ratio": 1.0,
+    "basis": "네이버 1분봉 VWAP+지지"
+  }
+]

@@ -241,7 +241,7 @@ async function loadArchive() {
 }
 
 document.getElementById('btn-scan').onclick = startScan;
-document.getElementById('btn-result').onclick = loadResult;
+const _btnR = document.getElementById('btn-result'); if(_btnR) _btnR.onclick = loadResult;
 document.getElementById('btn-vwap').onclick = checkVwap;
 document.getElementById('vwap-code').addEventListener('keydown', e => { if (e.key === 'Enter') checkVwap(); });
 
