@@ -332,7 +332,15 @@ def _fetch_naver_5min_candles(code, count=390):
         # 오늘 날짜만 필터
         today = datetime.now().strftime("%Y%m%d")
         today_candles = [c for c in candles if c['time'].startswith(today)]
-        return today_candles if today_candles else candles[-30:]
+        result = today_candles if today_candles else candles[-30:]
+        # 누적 거래량 → 분당 차분 변환 (네이버 fchart 특성)
+        if len(result) >= 2 and result[-1]['volume'] > result[0]['volume'] * 100:
+            prev = 0.0
+            for c in result:
+                cur = c['volume']
+                c['volume'] = max(cur - prev, 0)
+                prev = cur
+        return result
     except Exception as e:
         print(f"[naver_fchart] {code} 실패: {e}")
         return None
