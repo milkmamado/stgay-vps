@@ -284,42 +284,53 @@ def _calculate_score(stock):
 
 
 
-def _fetch_naver_5min_candles(code, count=78):
-    """네이버 차트 API로 당일 5분봉 받아오기. 실패시 None.
-    반환: [{'time', 'open', 'high', 'low', 'close', 'volume'}, ...]
+def _fetch_naver_5min_candles(code, count=390):
+    """네이버 fchart XML 1분봉 → 당일 봉 list. 실패시 None.
+    EUC-KR XML 응답: <item data="YYYYMMDDHHMM|open|high|low|close|volume" />
+    함수명은 호환을 위해 유지하지만 실제로는 1분봉 반환.
     """
     try:
         import requests, re
-        url = f"https://api.finance.naver.com/siseJson.naver?symbol={code}&requestType=1&count={count}&timeframe=5"
-        r = requests.get(url, timeout=5, headers={'User-Agent': 'Mozilla/5.0'})
+        from datetime import datetime
+        url = f"https://fchart.stock.naver.com/sise.nhn?symbol={code}&timeframe=minute&count={count}&requestType=0"
+        r = requests.get(url, timeout=8, headers={'User-Agent': 'Mozilla/5.0'})
         if r.status_code != 200:
             return None
-        # 응답이 JSON-like 이지만 single quote → 정규화
-        text = r.text.strip().replace("'", '"')
-        import json
-        rows = json.loads(text)
-        if not rows or len(rows) < 2:
+        # EUC-KR 디코딩
+        try:
+            text = r.content.decode('euc-kr')
+        except Exception:
+            text = r.text
+        # <item data="..." /> 추출
+        items = re.findall(r'<item data="([^"]+)"', text)
+        if not items:
             return None
-        # rows[0] = header, rows[1:] = data
         candles = []
-        for row in rows[1:]:
-            # [날짜, 시가, 고가, 저가, 종가, 거래량, 외인소진율]
-            candles.append({
-                'time': str(row[0]),
-                'open': float(row[1]),
-                'high': float(row[2]),
-                'low': float(row[3]),
-                'close': float(row[4]),
-                'volume': float(row[5]),
-            })
-        # 오늘 날짜만 필터 (YYYYMMDDHHMM)
-        from datetime import datetime
+        for raw in items:
+            parts = raw.split('|')
+            if len(parts) < 6: continue
+            t, o, h, l, c, v = parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]
+            # null 값 스킵 (장 시작 전 호가만 있는 봉)
+            if 'null' in (o, h, l) or c == 'null': continue
+            try:
+                candles.append({
+                    'time': t,
+                    'open': float(o), 'high': float(h),
+                    'low': float(l), 'close': float(c),
+                    'volume': float(v),
+                })
+            except ValueError:
+                continue
+        if not candles:
+            return None
+        # 오늘 날짜만 필터
         today = datetime.now().strftime("%Y%m%d")
         today_candles = [c for c in candles if c['time'].startswith(today)]
-        return today_candles if today_candles else candles[-12:]  # 최근 1시간 fallback
+        return today_candles if today_candles else candles[-30:]
     except Exception as e:
-        print(f"[naver_5min] {code} 실패: {e}")
+        print(f"[naver_fchart] {code} 실패: {e}")
         return None
+
 
 
 def _fetch_naver_realtime_price(code):
@@ -352,7 +363,7 @@ def _calc_scalping_levels(stock_mod, code, day_high, day_low, day_close):
         total_vol = sum(c['volume'] for c in candles) or 1
         vwap = typical_x_vol / total_vol
         
-        recent6 = candles[-6:]  # 최근 30분
+        recent6 = candles[-30:]  # 최근 30분 (1분봉 30개)
         low_30m = min(c['low'] for c in recent6)
         current_price = candles[-1]['close']
         
@@ -371,7 +382,7 @@ def _calc_scalping_levels(stock_mod, code, day_high, day_low, day_close):
             'entry_low': entry_low, 'entry_high': entry_high,
             'target1': target1, 'target2': target2, 'stop': stop,
             'rr_ratio': rr,
-            'basis': '네이버 5분봉 VWAP+지지',
+            'basis': '네이버 1분봉 VWAP+지지',
             'vwap': round(vwap),
             'current_price': round(current_price),
             'candle_count': len(candles),
