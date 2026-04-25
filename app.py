@@ -452,5 +452,83 @@ def scgay_api_archive():
     archive.sort(key=lambda x: x.get('recorded_at', ''), reverse=True)
     return jsonify({'items': archive[:100], 'total': len(archive)})
 
+# ──────────────────────────────────────────────────────────
+# SCGAY ABCD 패턴 판정 라우트 (Phase 2)
+# ──────────────────────────────────────────────────────────
+def _aggregate_1min_to_5min(candles_1min):
+    """네이버 1분봉 list → 5분봉 list ('HH:MM' 시간키)."""
+    if not candles_1min:
+        return []
+    buckets = {}
+    order = []
+    for c in candles_1min:
+        try:
+            t = c['time']
+            if len(t) < 12:
+                continue
+            hh = int(t[8:10]); mm = int(t[10:12])
+            bucket_min = (mm // 5) * 5
+            key = f"{hh:02d}:{bucket_min:02d}"
+            if key not in buckets:
+                buckets[key] = {
+                    'time': key,
+                    'open': float(c['open']),
+                    'high': float(c['high']),
+                    'low': float(c['low']),
+                    'close': float(c['close']),
+                    'volume': float(c.get('volume', 0)),
+                }
+                order.append(key)
+            else:
+                b = buckets[key]
+                b['high'] = max(b['high'], float(c['high']))
+                b['low'] = min(b['low'], float(c['low']))
+                b['close'] = float(c['close'])
+                b['volume'] += float(c.get('volume', 0))
+        except (ValueError, KeyError, TypeError):
+            continue
+    return [buckets[k] for k in order]
+
+
+@app.route('/scgay/api/abcd_check')
+@scgay_login_required
+def scgay_api_abcd_check():
+    """단일 종목 ABCD 패턴 판정 (5분봉 기준)."""
+    code = (request.args.get('code') or '').strip()
+    if not (code.isdigit() and len(code) == 6):
+        return jsonify({'error': '6자리 종목코드를 입력하세요'}), 400
+    try:
+        from modules.surge_scanner import _fetch_naver_5min_candles
+        from modules.abcd_detector import detect_abcd_phase
+    except Exception as e:
+        return jsonify({'error': f'모듈 로드 실패: {e}'}), 500
+    try:
+        from pykrx import stock as _pykrx_stock
+        stock_name = _pykrx_stock.get_market_ticker_name(code) or code
+    except Exception:
+        stock_name = code
+    try:
+        candles_1min = _fetch_naver_5min_candles(code, count=390) or []
+        if not candles_1min:
+            return jsonify({'error': '분봉 데이터 없음 (장 시작 전이거나 거래 정지)'}), 404
+        candles_5min = _aggregate_1min_to_5min(candles_1min)
+        if not candles_5min:
+            return jsonify({'error': '5분봉 집계 실패'}), 500
+        day_open = candles_5min[0]['open']
+        result = detect_abcd_phase(candles_5min, day_open=day_open)
+        trackable_phases = {'B', 'B→C 형성중', 'C', 'D'}
+        result['trackable'] = result['phase'] in trackable_phases
+        result['code'] = code
+        result['name'] = stock_name
+        result['day_open'] = round(day_open, 2)
+        result['candle_count_5min'] = len(candles_5min)
+        result['updated_at'] = _scgay_dt.now().strftime('%Y-%m-%d %H:%M:%S')
+        return jsonify(result)
+    except Exception as e:
+        import traceback
+        return jsonify({'error': f'ABCD 판정 실패: {e}', 'trace': traceback.format_exc()[-500:]}), 500
+
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5003, debug=False)
