@@ -129,6 +129,24 @@
     border: 1px solid rgba(0,255,255,0.2);
   }
   .vwap-result.active { display: block; }
+  .abcd-result { display:none; margin-top:12px; padding:12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; }
+  .abcd-result.active { display:block; }
+  .abcd-phase-pill { display:inline-block; padding:4px 12px; border-radius:999px; font-weight:700; font-size:13px; margin-right:8px; }
+  .abcd-phase-NONE { background:rgba(120,120,120,0.2); color:#aaa; }
+  .abcd-phase-A { background:rgba(96,165,250,0.2); color:#60a5fa; }
+  .abcd-phase-B { background:rgba(251,191,36,0.2); color:#fbbf24; }
+  .abcd-phase-C { background:rgba(34,197,94,0.2); color:#22c55e; }
+  .abcd-phase-Cplus { background:linear-gradient(135deg,#22c55e,#fbbf24); color:#000; box-shadow:0 0 12px rgba(251,191,36,0.5); animation:pulse 1.5s infinite; }
+  .abcd-phase-D { background:linear-gradient(135deg,#ef4444,#fbbf24); color:#fff; }
+  .abcd-phase-wait { background:rgba(168,85,247,0.2); color:#a855f7; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
+  .abcd-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:8px; margin-top:10px; }
+  .abcd-grid .cell { background:rgba(255,255,255,0.04); padding:8px 10px; border-radius:6px; }
+  .abcd-grid .lbl { font-size:11px; color:#888; margin-bottom:2px; }
+  .abcd-grid .val { font-size:14px; font-weight:600; color:#fff; }
+  .abcd-reason { margin-top:10px; padding:8px 12px; background:rgba(0,0,0,0.2); border-radius:6px; font-size:12px; color:#ccc; line-height:1.5; }
+  .abcd-cplus-banner { margin-top:10px; padding:10px; background:linear-gradient(135deg,rgba(34,197,94,0.15),rgba(251,191,36,0.15)); border:1px solid rgba(251,191,36,0.4); border-radius:6px; color:#fbbf24; font-weight:600; font-size:13px; text-align:center; }
+
   table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
   th, td { padding: 12px 8px; text-align: left; border-bottom: 1px solid rgba(255,0,255,0.08); }
   th { color: #ff69b4; font-weight: 700; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
@@ -234,6 +252,17 @@
         <button class="primary" id="btn-vwap">조회</button>
       </div>
       <div class="vwap-result" id="vwap-out"></div>
+    </div>
+
+
+    <!-- 2-2) ABCD 패턴 판정 -->
+    <div class="card abcd-card">
+      <h2>🎯 ABCD 패턴 분석 <span class="badge">대장주 후보</span></h2>
+      <div class="row">
+        <input class="txt" id="abcd-code" maxlength="6" placeholder="종목코드 (006340)">
+        <button class="primary" id="btn-abcd">판정</button>
+      </div>
+      <div class="abcd-result" id="abcd-out"></div>
     </div>
 
     <!-- 3) 아카이브 -->
@@ -380,6 +409,63 @@ document.getElementById('btn-scan').onclick = startScan;
 const _btnR = document.getElementById('btn-result'); if(_btnR) _btnR.onclick = loadResult;
 document.getElementById('btn-vwap').onclick = checkVwap;
 document.getElementById('vwap-code').addEventListener('keydown', e => { if (e.key === 'Enter') checkVwap(); });
+
+// === ABCD 패턴 ===
+function abcdPhaseClass(phase) {
+  if (phase === 'C+') return 'abcd-phase-Cplus';
+  if (phase && phase.startsWith('B→C')) return 'abcd-phase-wait';
+  if (phase && phase.startsWith('A→B')) return 'abcd-phase-B';
+  if (phase === 'A 형성중') return 'abcd-phase-A';
+  return 'abcd-phase-' + (phase || 'NONE');
+}
+function abcdStarsRender(n) {
+  if (!n) return '<span style="color:#666">☆☆☆</span>';
+  return '<span style="color:#fbbf24">' + '⭐'.repeat(n) + '</span>';
+}
+async function checkAbcd() {
+  const code = document.getElementById('abcd-code').value.trim();
+  const out = document.getElementById('abcd-out');
+  if (!/^\d{6}$/.test(code)) { alert('6자리 종목코드 입력'); return; }
+  out.className = 'abcd-result active';
+  out.innerHTML = '<div style="color:#888">조회 중...</div>';
+  try {
+    const r = await fetch('/scgay/api/abcd_check?code=' + encodeURIComponent(code));
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || '실패');
+    
+    const phaseClass = abcdPhaseClass(d.phase);
+    const cplusBanner = d.c_plus_signal
+      ? '<div class="abcd-cplus-banner">🚨 C+ 신호탄 감지! ' + (d.c_plus_reason || '') + ' → VWAP 확인 후 진입 준비</div>'
+      : '';
+    
+    out.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+        <div>
+          <span class="abcd-phase-pill ${phaseClass}">${d.phase || 'NONE'}</span>
+          <span style="font-weight:600;color:#fff">${d.name || code}</span>
+          <span style="color:#888;font-size:12px">(${code})</span>
+        </div>
+        <div>${abcdStarsRender(d.reliability_stars)}</div>
+      </div>
+      <div class="abcd-grid">
+        <div class="cell"><div class="lbl">A (${d.a_source || '-'})</div><div class="val">${fmt(d.a)}</div></div>
+        <div class="cell"><div class="lbl">B (정점)</div><div class="val">${fmt(d.b)}</div></div>
+        <div class="cell"><div class="lbl">시가→B</div><div class="val">+${(d.surge_from_open_pct||0).toFixed(1)}%</div></div>
+        <div class="cell"><div class="lbl">C 박스</div><div class="val">${fmt(d.c_low)}~${fmt(d.c_high)}</div></div>
+        <div class="cell"><div class="lbl">D 목표</div><div class="val">${fmt(d.d_target_min)}~${fmt(d.d_target_max)}</div></div>
+        <div class="cell"><div class="lbl">B 후 봉수</div><div class="val">${d.bars_after_b || 0}봉</div></div>
+      </div>
+      ${cplusBanner}
+      <div class="abcd-reason">📌 ${d.reason || '-'}</div>
+      <div style="margin-top:8px;font-size:11px;color:#666;text-align:right">${d.updated_at || ''}</div>
+    `;
+  } catch (e) {
+    out.innerHTML = '<div style="color:#ef4444">❌ ' + (e.message || '오류') + '</div>';
+  }
+}
+document.getElementById('btn-abcd').onclick = checkAbcd;
+document.getElementById('abcd-code').addEventListener('keydown', e => { if (e.key === 'Enter') checkAbcd(); });
+
 
 // 초기 로드
 loadArchive();
