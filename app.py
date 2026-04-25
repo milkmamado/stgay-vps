@@ -335,6 +335,11 @@ def scgay_api_vwap():
         return jsonify({'error': '6자리 종목코드를 입력하세요'}), 400
     try:
         from modules.surge_scanner import _fetch_naver_5min_candles, _fetch_naver_realtime_price
+        try:
+            from pykrx import stock as _pykrx_stock
+            stock_name = _pykrx_stock.get_market_ticker_name(code) or code
+        except Exception:
+            stock_name = code
     except Exception as e:
         return jsonify({'error': f'surge_scanner 모듈 로드 실패: {e}'}), 500
 
@@ -374,6 +379,7 @@ def scgay_api_vwap():
 
         return jsonify({
             'code': code,
+            'name': stock_name,
             'current_price': round(price),
             'vwap': round(vwap),
             'day_high': round(day_high),

@@ -163,7 +163,7 @@
 
     <!-- 2) VWAP 조회 -->
     <div class="card">
-      <h2>🕯️ 단일 봉 정밀 측정</h2>
+      <h2>🍆 단일 종목 육봉 체크</h2>
       <div class="row">
         <input class="txt" id="vwap-code" maxlength="6" placeholder="종목코드 (006340)">
         <button class="primary" id="btn-vwap">조회</button>
@@ -267,7 +267,7 @@ async function checkVwap() {
     if (!r.ok) throw new Error(d.error || '실패');
     out.innerHTML = `
       <div style="display:flex;justify-content:space-between;margin-bottom:12px">
-        <div><b style="font-size:18px">${d.code}</b> <span style="color:#94a3b8;font-size:12px">${d.updated_at}</span></div>
+        <div><b style="font-size:18px">${d.name || d.code}</b> <span style="color:#94a3b8;font-size:12px;margin-left:6px">${d.code}</span><div style="color:#64748b;font-size:11px;margin-top:2px">${d.updated_at}</div></div>
         <div class="pct-up" style="font-size:18px">${fmt(d.current_price)}원</div>
       </div>
       <div class="scalp">
