@@ -536,7 +536,7 @@ def scgay_api_abcd_check():
 import os as _stalk_os
 import json as _stalk_json
 from datetime import datetime as _stalk_dt
-from modules.abcd_detector import detect_abcd as _stalk_detect
+from modules.abcd_detector import detect_abcd_phase as _stalk_detect
 
 SCGAY_STALKING_FILE = '/opt/stock-crawler/data/scgay_stalking.json'
 SCGAY_STALKING_ENABLED_FLAG = '/opt/stock-crawler/data/scgay_stalking_enabled'
