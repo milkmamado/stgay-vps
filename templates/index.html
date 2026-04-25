@@ -481,39 +481,6 @@ label[for*="surge"] {
 /* === /scgay-split === */
 
 
-/* ---- SCS Time Zone Badge ---- */
-.scs-zone-wrap { padding: 14px 20px 0; max-width: 880px; margin: 0 auto; }
-.scs-zone-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; transition: border-color 0.2s ease; }
-.scs-zone-card:hover { border-color: #2a2a2a; }
-.scs-zone-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; cursor: pointer; user-select: none; gap: 12px; }
-.scs-zone-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
-.scs-zone-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 9999px; font-size: 11px; font-weight: 700; letter-spacing: 0.3px; white-space: nowrap; }
-.scs-zone-pill.golden { background: rgba(0,200,83,0.12); color: var(--green); border: 1px solid rgba(0,200,83,0.35); animation: scsPulse 2s ease-in-out infinite; }
-.scs-zone-pill.caution { background: rgba(245,166,35,0.12); color: var(--yellow); border: 1px solid rgba(245,166,35,0.35); }
-.scs-zone-pill.danger { background: rgba(238,0,0,0.12); color: var(--red); border: 1px solid rgba(238,0,0,0.4); animation: scsBlink 1.2s ease-in-out infinite; }
-.scs-zone-pill.closed { background: rgba(136,136,136,0.1); color: var(--text-dim); border: 1px solid var(--border); }
-@keyframes scsPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(0,200,83,0.4); } 50% { box-shadow: 0 0 0 6px rgba(0,200,83,0); } }
-@keyframes scsBlink { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
-.scs-zone-msg { font-size: 12.5px; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.scs-zone-msg b { color: var(--text); font-weight: 600; }
-.scs-zone-toggle { font-size: 11px; color: var(--text-muted); border: 1px solid var(--border); padding: 3px 8px; border-radius: 6px; transition: all 0.15s ease; white-space: nowrap; }
-.scs-zone-card.open .scs-zone-toggle { color: var(--text); border-color: #333; }
-.scs-zone-body { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; border-top: 1px solid transparent; }
-.scs-zone-card.open .scs-zone-body { max-height: 720px; border-top-color: var(--border); }
-.scs-zone-inner { padding: 14px 16px 16px; }
-.scs-zone-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
-.scs-zone-table th, .scs-zone-table td { padding: 7px 8px; text-align: left; border-bottom: 1px solid var(--border); }
-.scs-zone-table th { color: var(--text-dim); font-weight: 500; font-size: 11px; letter-spacing: 0.3px; text-transform: uppercase; }
-.scs-zone-table tr.now td { background: rgba(0,112,243,0.08); color: var(--text); }
-.scs-zone-table td.t { font-family: 'JetBrains Mono', monospace; color: var(--text); }
-.scs-zone-tag { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10.5px; font-weight: 600; }
-.scs-zone-tag.g { background: rgba(0,200,83,0.15); color: var(--green); }
-.scs-zone-tag.y { background: rgba(245,166,35,0.15); color: var(--yellow); }
-.scs-zone-tag.r { background: rgba(238,0,0,0.15); color: var(--red); }
-.scs-zone-tip { margin-top: 10px; padding: 8px 10px; background: rgba(255,255,255,0.02); border-left: 2px solid var(--accent); border-radius: 4px; font-size: 11.5px; color: var(--text-dim); line-height: 1.5; }
-.scs-zone-tip b { color: var(--text); }
-@media (max-width: 600px) { .scs-zone-msg { display: none; } .scs-zone-table th:nth-child(3), .scs-zone-table td:nth-child(3) { display: none; } }
-
 </style>
 </head>
 <body>
@@ -525,35 +492,6 @@ label[for*="surge"] {
         <div class="navbar-right">
             <button id="downloadBtn" class="btn-small" style="display:none" onclick="downloadHTML()">📥 HTML 저장</button>
             <button class="btn-small btn-logout" onclick="location.href='/stgay/logout'">로그아웃</button>
-        </div>
-    </div>
-
-    <div class="scs-zone-wrap">
-        <div id="scsZoneCard" class="scs-zone-card" onclick="toggleScsZone(event)">
-            <div class="scs-zone-head">
-                <div class="scs-zone-left">
-                    <span id="scsZonePill" class="scs-zone-pill closed">⏰ --:--</span>
-                    <span id="scsZoneMsg" class="scs-zone-msg">SCS 매매 시간대 가이드</span>
-                </div>
-                <span class="scs-zone-toggle">▾ 펼치기</span>
-            </div>
-            <div class="scs-zone-body">
-                <div class="scs-zone-inner">
-                    <table class="scs-zone-table" id="scsZoneTable">
-                        <thead><tr><th>시간대</th><th>구간</th><th>핵심 포인트</th></tr></thead>
-                        <tbody>
-                            <tr data-s="0900" data-e="0930"><td class="t">09:00–09:30</td><td><span class="scs-zone-tag r">DANGER</span></td><td>시초 갭/매물 폭탄, VWAP 표본 부족 → 함정 90%</td></tr>
-                            <tr data-s="0930" data-e="1000"><td class="t">09:30–10:00</td><td><span class="scs-zone-tag y">CAUTION</span></td><td>거래량 1.5배 + VWAP 위 조건일 때만 진입</td></tr>
-                            <tr data-s="1000" data-e="1130"><td class="t">10:00–11:30</td><td><span class="scs-zone-tag g">GOLDEN</span></td><td>🍆 육봉 크로스체킹 황금 타임 — VWAP 신뢰도 최고</td></tr>
-                            <tr data-s="1130" data-e="1330"><td class="t">11:30–13:30</td><td><span class="scs-zone-tag y">CAUTION</span></td><td>점심 거래량 급감, 신호 의미 약함</td></tr>
-                            <tr data-s="1330" data-e="1430"><td class="t">13:30–14:30</td><td><span class="scs-zone-tag g">GOLDEN</span></td><td>오후 추세 형성 + 재진입 매수세</td></tr>
-                            <tr data-s="1430" data-e="1500"><td class="t">14:30–15:00</td><td><span class="scs-zone-tag r">DANGER</span></td><td>종가 베팅 변동성, 5분 만에 -3% 가능</td></tr>
-                            <tr data-s="1500" data-e="1520"><td class="t">15:00–15:20</td><td><span class="scs-zone-tag r">DANGER</span></td><td>동시호가 — 매도 못 함, 절대 금지</td></tr>
-                        </tbody>
-                    </table>
-                    <div class="scs-zone-tip">💡 <b>핵심 한 줄:</b> 10:00–11:30이 SCS 황금 시간대. 그 외에는 신호 의심하고 보수적으로! VWAP 30분 롤링 기반이라 시초/종가는 표본이 흔들립니다.</div>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -1150,62 +1088,6 @@ label[for*="surge"] {
 
         h += '<div class="footer"><p>⚠️ 본 분석은 AI 기반 참고 자료이며, 투자 결정은 본인의 판단에 따라 이루어져야 합니다.</p></div>';
         h += '</div>
-<script>
-(function(){
-    function nowKstMinutes(){
-        var d = new Date();
-        var utc = d.getTime() + d.getTimezoneOffset()*60000;
-        var kst = new Date(utc + 9*3600000);
-        return { h: kst.getHours(), m: kst.getMinutes(), day: kst.getDay() };
-    }
-    function fmt(h,m){ return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'); }
-    function toMin(s){ return parseInt(s.slice(0,2))*60 + parseInt(s.slice(2)); }
-    function pickZone(h,m,day){
-        var cur = h*60 + m;
-        if (day === 0 || day === 6) return {cls:'closed', label:'휴장', msg:'주말 — 다음 거래일 10:00 황금 시간대 대기 🌙'};
-        if (cur < 9*60)        return {cls:'closed', label:'장 시작 전', msg:'09:00 개장 대기 — 09:30까지는 관망 권장'};
-        if (cur >= 15*60+30)   return {cls:'closed', label:'장 마감', msg:'오늘 장 마감 — 내일 10:00 골든존에서 만나요 ☕'};
-        var rows = document.querySelectorAll('#scsZoneTable tbody tr');
-        for (var i=0; i<rows.length; i++){
-            var tr = rows[i];
-            var s = toMin(tr.dataset.s), e = toMin(tr.dataset.e);
-            if (cur >= s && cur < e){
-                var tag = tr.querySelector('.scs-zone-tag');
-                var tagCls = tag.classList.contains('g') ? 'golden' : tag.classList.contains('r') ? 'danger' : 'caution';
-                var label = tagCls === 'golden' ? '🟢 GOLDEN ZONE' : tagCls === 'danger' ? '🔴 DANGER ZONE' : '🟡 CAUTION ZONE';
-                tr.classList.add('now');
-                return {cls:tagCls, label:label, msg:'<b>'+tr.children[0].textContent+'</b> · '+tr.children[2].textContent};
-            }
-        }
-        return {cls:'closed', label:'--', msg:'시간대 정보 없음'};
-    }
-    function refresh(){
-        var t = nowKstMinutes();
-        var nows = document.querySelectorAll('#scsZoneTable tr.now');
-        for (var i=0; i<nows.length; i++) nows[i].classList.remove('now');
-        var z = pickZone(t.h, t.m, t.day);
-        var pill = document.getElementById('scsZonePill');
-        var msg = document.getElementById('scsZoneMsg');
-        if (!pill || !msg) return;
-        pill.className = 'scs-zone-pill ' + z.cls;
-        pill.textContent = '⏰ ' + fmt(t.h,t.m) + ' · ' + z.label;
-        msg.innerHTML = z.msg;
-    }
-    window.toggleScsZone = function(e){
-        var card = document.getElementById('scsZoneCard');
-        if (!card) return;
-        if (e && e.target.closest('.scs-zone-body')) return;
-        card.classList.toggle('open');
-        var tog = card.querySelector('.scs-zone-toggle');
-        if (tog) tog.textContent = card.classList.contains('open') ? '▴ 접기' : '▾ 펼치기';
-    };
-    document.addEventListener('DOMContentLoaded', function(){
-        refresh();
-        setInterval(refresh, 60000);
-    });
-})();
-</script>
-
 </body></html>';
 
         const blob = new Blob([h], { type: 'text/html;charset=utf-8' });
