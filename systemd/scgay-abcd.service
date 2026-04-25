@@ -1,0 +1,11 @@
+[Unit]
+Description=SCGAY ABCD Phase Tracker
+After=network.target stock-crawler.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/stock-crawler
+EnvironmentFile=/etc/stock-crawler.env
+ExecStart=/opt/stock-crawler/venv/bin/python /opt/stock-crawler/cron_scgay_abcd.py
+StandardOutput=journal
+StandardError=journal
