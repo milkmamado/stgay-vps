@@ -640,7 +640,9 @@ def scgay_stalking_toggle():
         _stalk_os.remove(SCGAY_STALKING_ENABLED_FLAG)
         return jsonify({'enabled': False, 'msg': '🛑 스토킹 중단'})
     else:
-        Path(SCGAY_STALKING_ENABLED_FLAG).touch()
+        # Path 의존 제거: os 기반 빈 파일 생성
+        _fd = _stalk_os.open(SCGAY_STALKING_ENABLED_FLAG, _stalk_os.O_CREAT | _stalk_os.O_WRONLY, 0o644)
+        _stalk_os.close(_fd)
         return jsonify({'enabled': True, 'msg': '▶️ 스토킹 시작'})
 
 
