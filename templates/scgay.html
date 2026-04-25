@@ -212,6 +212,124 @@
 .scs-zone-tip b { color: #ff69b4; }
 @media (max-width: 600px) { .scs-zone-msg { display: none; } .scs-zone-table th:nth-child(3), .scs-zone-table td:nth-child(3) { display: none; } }
 
+
+/* 🍆 SCGAY 도움말 모달 (팀원 가이드) */
+.scgay-help-btn {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 9998;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.scgay-help-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.55);
+}
+.scgay-help-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px;
+  overflow-y: auto;
+}
+.scgay-help-overlay.active { display: flex; }
+.scgay-help-modal {
+  background: #1a1d2e;
+  border-radius: 16px;
+  max-width: 860px;
+  width: 100%;
+  padding: 28px 32px;
+  color: #e4e6f0;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,255,255,0.08);
+  font-family: -apple-system, 'Inter', sans-serif;
+  line-height: 1.6;
+  margin: auto;
+}
+.scgay-help-modal h2 {
+  margin: 0 0 8px;
+  font-size: 24px;
+  background: linear-gradient(90deg, #f59e0b, #ef4444);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.scgay-help-modal h3 {
+  margin: 24px 0 10px;
+  font-size: 17px;
+  color: #a5b4fc;
+  border-bottom: 1px solid rgba(165,180,252,0.2);
+  padding-bottom: 6px;
+}
+.scgay-help-modal h4 {
+  margin: 14px 0 6px;
+  font-size: 14px;
+  color: #fbbf24;
+}
+.scgay-help-modal p { margin: 6px 0; font-size: 14px; }
+.scgay-help-modal ol, .scgay-help-modal ul { padding-left: 22px; margin: 6px 0; }
+.scgay-help-modal li { margin: 4px 0; font-size: 14px; }
+.scgay-help-modal code {
+  background: rgba(255,255,255,0.08);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #fbbf24;
+}
+.scgay-help-modal table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+  font-size: 13px;
+}
+.scgay-help-modal th, .scgay-help-modal td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.scgay-help-modal th {
+  background: rgba(99,102,241,0.15);
+  color: #a5b4fc;
+  font-weight: 600;
+}
+.scgay-zone-golden { background: rgba(34,197,94,0.18); color: #86efac; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+.scgay-zone-caution { background: rgba(251,191,36,0.18); color: #fcd34d; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+.scgay-zone-danger { background: rgba(239,68,68,0.2); color: #fca5a5; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+.scgay-help-close {
+  float: right;
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+}
+.scgay-help-close:hover { background: rgba(239,68,68,0.3); }
+.scgay-help-tldr {
+  background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(239,68,68,0.15));
+  border-left: 3px solid #f59e0b;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin: 14px 0;
+  font-size: 14px;
+}
+
 </style>
 </head>
 <body>
@@ -656,6 +774,89 @@ fetch('/scgay/api/status').then(r => r.json()).then(d => {
     });
 })();
 </script>
+
+
+<!-- 🍆 SCGAY 팀원 가이드 모달 -->
+<button class="scgay-help-btn" onclick="document.getElementById('scgay-help-modal').classList.add('active')">📖 사용 가이드</button>
+
+<div class="scgay-help-overlay" id="scgay-help-modal" onclick="if(event.target===this)this.classList.remove('active')">
+  <div class="scgay-help-modal">
+    <button class="scgay-help-close" onclick="document.getElementById('scgay-help-modal').classList.remove('active')">×</button>
+    <h2>🍆 SCGAY 사용 가이드</h2>
+    <p style="color:#94a3b8;font-size:13px;">스캘핑 대장주 발굴 + 육봉(ABCD) 자동 추적 시스템</p>
+
+    <div class="scgay-help-tldr">
+      💡 <b>한 줄 요약</b>: <span class="scgay-zone-golden">10:00–11:30</span>이 황금 시간대.
+      그 외 시간 신호는 의심하고 보수적으로! VWAP 30분 롤링 기반이라 시초/종가는 표본이 흔들립니다.
+    </div>
+
+    <h3>⏰ 시간대별 매매 가이드</h3>
+    <table>
+      <tr><th>시간대</th><th>구간</th><th>핵심 포인트</th></tr>
+      <tr><td>09:00–09:30</td><td><span class="scgay-zone-danger">🔴 DANGER</span></td><td>시초 갭/매물 폭탄, VWAP 표본 부족 → <b>함정 90%</b></td></tr>
+      <tr><td>09:30–10:00</td><td><span class="scgay-zone-caution">🟡 CAUTION</span></td><td>거래량 1.5배 + VWAP 위 조건일 때만 진입</td></tr>
+      <tr><td>10:00–11:30</td><td><span class="scgay-zone-golden">🟢 GOLDEN</span></td><td>🍆 육봉 크로스체킹 <b>황금 타임</b> — VWAP 신뢰도 최고</td></tr>
+      <tr><td>11:30–13:30</td><td><span class="scgay-zone-caution">🟡 CAUTION</span></td><td>점심 거래량 급감, 신호 의미 약함</td></tr>
+      <tr><td>13:30–14:30</td><td><span class="scgay-zone-golden">🟢 GOLDEN</span></td><td>오후 추세 형성 + 재진입 매수세</td></tr>
+      <tr><td>14:30–15:00</td><td><span class="scgay-zone-danger">🔴 DANGER</span></td><td>종가 베팅 변동성, 5분 만에 -3% 가능</td></tr>
+      <tr><td>15:00–15:20</td><td><span class="scgay-zone-danger">🔴 DANGER</span></td><td>동시호가 — 매도 못 함, <b>절대 금지</b></td></tr>
+    </table>
+
+    <h3>🍆 육봉(ABCD) 패턴이란?</h3>
+    <p><b>"바닥(A)에서 솟구쳐(B), 잠깐 쉬다가(C), 더 솟으면(D) → 매수!"</b></p>
+    <ul>
+      <li><b>🅰️ A (바닥)</b> = <code>min(시가, 직전 30분 저점)</code> — 진짜 출발선</li>
+      <li><b>🅱️ B (1차 솟음)</b> = A 대비 <b>+5% 이상</b> 상승 → 대장주 자격</li>
+      <li><b>🅲️ C (보합)</b> = B 후 <b>3봉 연속</b>, 변동폭 ≤ 30% → 📲 <b>알림 발송!</b></li>
+      <li><b>🅳️ D (돌파)</b> = C 깨고 B보다 더 높이 → 📲 <b>매수 신호!</b></li>
+    </ul>
+
+    <h3>⭐ 신뢰도 별점 (B 도달 시각 기준)</h3>
+    <table>
+      <tr><th>별점</th><th>B 도달</th><th>의미</th></tr>
+      <tr><td>⭐⭐⭐</td><td>09:30 이내</td><td>장 시작과 동시 솟음 = 진짜 대장주</td></tr>
+      <tr><td>⭐⭐</td><td>~10:30</td><td>좋음 (오전 강세)</td></tr>
+      <tr><td>⭐</td><td>그 이후</td><td>보통 (오후 진입은 위험)</td></tr>
+    </table>
+
+    <h3>📋 사용 절차 (팀원용)</h3>
+    <ol>
+      <li><b>대장주 후보 추리기</b>: 메인에서 <code>🍆 육봉 크로스체킹 가동</code> + <code>15% 솟음 분석</code> 클릭</li>
+      <li><b>키움 관심종목 등록</b>: 추린 후보를 키움 HTS/MTS에 추가 (수동)</li>
+      <li><b>단일 종목 ABCD 체크</b>: 종목코드 입력 → 현재 phase 확인</li>
+      <li><b>스토킹 등록</b>: <code>➕</code>으로 추적 리스트 추가</li>
+      <li><b>크론 가동</b>: <code>▶️ 스토킹 시작</code> 클릭 (토글 ON)</li>
+      <li><b>알림 대기</b>: 09:30~14:30 동안 2분마다 자동 체크 → C/C+/D 확정시 텔레그램 알림 📲</li>
+      <li><b>매수 결정</b>: 알림 받으면 <span class="scgay-zone-golden">시간대 + 별점</span> 종합 판단 후 키움에서 매수</li>
+    </ol>
+
+    <h3>🚨 알림 정책</h3>
+    <ul>
+      <li>✅ <b>C / C+ / D 확정시 자동 알림</b> (중복 방지)</li>
+      <li>❌ <b>손절 알림 없음</b> — 본인 판단 (자동화 위험)</li>
+      <li>🗑️ <b>추적 만료 없음</b> — 휴지통 버튼으로 수동 삭제</li>
+      <li>⏰ <b>09:30 이전</b> = "데이터 수집 중" (봉 데이터 쌓이기 전)</li>
+    </ul>
+
+    <h3>💡 팀원이 자주 묻는 것</h3>
+    <h4>Q. 알림 안 와요</h4>
+    <ul>
+      <li>① <code>▶️ 스토킹 시작</code> 토글 ON 됐나?</li>
+      <li>② 평일 09:30~14:30인가? (장외엔 안 옴)</li>
+      <li>③ 추적 리스트에 종목 들어있나?</li>
+    </ul>
+    <h4>Q. 알림 왔는데 사야 돼요?</h4>
+    <ul>
+      <li>① 시간대 확인 — <span class="scgay-zone-golden">GOLDEN</span>이면 ✅, <span class="scgay-zone-danger">DANGER</span>면 ❌</li>
+      <li>② 별점 확인 — ⭐⭐⭐ 우선</li>
+      <li>③ <b>D 확정</b>이 진짜 매수 신호 (C는 진입 준비)</li>
+    </ul>
+
+    <p style="margin-top:24px;color:#64748b;font-size:12px;text-align:center;">
+      🐦 PigeonAI · SCGAY v1.0 · 문의: 손부장님
+    </p>
+  </div>
+</div>
 
 </body>
 </html>
