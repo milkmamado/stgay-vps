@@ -8,85 +8,151 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Pretendard', sans-serif;
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    color: #e2e8f0; min-height: 100vh; padding: 24px;
+    background: radial-gradient(ellipse at top, #1a0033 0%, #000 70%);
+    color: #e2e8f0; min-height: 100vh; padding: 24px; position: relative; overflow-x: hidden;
   }
-  .wrap { max-width: 1200px; margin: 0 auto; }
+  /* 배경 떠다니는 캔들 */
+  body::before, body::after {
+    content: '🕯️'; position: fixed; font-size: 60px; opacity: 0.06; pointer-events: none;
+    animation: float 12s ease-in-out infinite;
+  }
+  body::before { top: 10%; left: 3%; }
+  body::after  { top: 60%; right: 4%; animation-delay: 6s; }
+  @keyframes float {
+    0%,100% { transform: translateY(0) rotate(-8deg); }
+    50%     { transform: translateY(-40px) rotate(8deg); }
+  }
+  .wrap { max-width: 1200px; margin: 0 auto; position: relative; z-index: 1; }
   header {
     display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 24px;
+    margin-bottom: 24px; padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255,0,255,0.15);
   }
-  .logo { font-size: 24px; font-weight: 800; background: linear-gradient(135deg,#f59e0b,#ef4444); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-  .logout { color: #94a3b8; text-decoration: none; font-size: 13px; padding: 6px 14px; border-radius: 999px; background: rgba(255,255,255,0.05); }
-  .logout:hover { color: #fff; }
+  .logo {
+    font-size: 28px; font-weight: 900; letter-spacing: 4px; color: #fff;
+    text-shadow: 0 0 8px #ff00ff, 0 0 16px #ff00ff, 0 0 32px #ff1493;
+    animation: flicker 4s infinite alternate;
+  }
+  .logo::after {
+    content: ' · SIX CANDLE SYSTEM';
+    font-size: 11px; letter-spacing: 4px; color: #00ffff;
+    text-shadow: 0 0 6px #00ffff; font-weight: 600; margin-left: 8px;
+  }
+  @keyframes flicker {
+    0%,95%,100% { opacity: 1; }
+    96%,98% { opacity: 0.6; }
+    97% { opacity: 0.3; }
+  }
+  .logout {
+    color: #ff69b4; text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border-radius: 999px;
+    background: rgba(255,0,255,0.08); border: 1px solid rgba(255,0,255,0.2);
+    transition: all 0.2s;
+  }
+  .logout:hover { color: #fff; background: rgba(255,0,255,0.2); box-shadow: 0 0 12px rgba(255,0,255,0.5); }
   .grid { display: grid; gap: 20px; grid-template-columns: 1fr 1fr; }
   @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
   .card {
-    background: rgba(255,255,255,0.04); backdrop-filter: blur(20px);
-    border: 1px solid rgba(255,255,255,0.08); border-radius: 20px;
+    background: rgba(20,0,40,0.5); backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,0,255,0.2); border-radius: 20px;
     padding: 24px;
+    box-shadow: 0 0 24px rgba(255,0,255,0.08), inset 0 0 20px rgba(255,0,255,0.03);
+    transition: border-color 0.3s, box-shadow 0.3s;
   }
+  .card:hover { border-color: rgba(0,255,255,0.3); box-shadow: 0 0 32px rgba(0,255,255,0.12); }
   .card.full { grid-column: 1 / -1; }
-  h2 { font-size: 16px; font-weight: 700; margin-bottom: 16px; color: #f1f5f9; display: flex; align-items: center; gap: 8px; }
-  .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: rgba(245,158,11,0.15); color: #fbbf24; font-weight: 600; }
+  h2 { font-size: 17px; font-weight: 800; margin-bottom: 16px; color: #fff;
+       display: flex; align-items: center; gap: 8px; letter-spacing: 1px;
+       text-shadow: 0 0 8px rgba(255,0,255,0.4); }
+  .badge {
+    font-size: 11px; padding: 3px 10px; border-radius: 999px;
+    background: rgba(255,0,255,0.15); color: #ff69b4; font-weight: 700;
+    border: 1px solid rgba(255,0,255,0.3); letter-spacing: 1px;
+  }
   button.primary {
-    padding: 12px 24px; border-radius: 999px; border: none;
-    background: linear-gradient(135deg,#f59e0b,#ef4444); color: white;
-    font-weight: 700; cursor: pointer; font-size: 14px;
+    padding: 12px 28px; border-radius: 999px; border: none;
+    background: linear-gradient(135deg, #ff00ff, #ff1493, #00ffff);
+    background-size: 200% 200%; color: white;
+    font-weight: 800; cursor: pointer; font-size: 14px; letter-spacing: 1px;
+    animation: gradient-shift 3s ease infinite;
+    box-shadow: 0 0 16px rgba(255,0,255,0.5);
     transition: transform 0.15s;
   }
-  button.primary:hover { transform: translateY(-1px); }
-  button.primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  @keyframes gradient-shift {
+    0%,100% { background-position: 0% 50%; }
+    50%     { background-position: 100% 50%; }
+  }
+  button.primary:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 0 24px rgba(255,0,255,0.7); }
+  button.primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; animation: none; }
   button.ghost {
     padding: 10px 18px; border-radius: 999px;
-    background: rgba(255,255,255,0.06); color: #e2e8f0;
-    border: 1px solid rgba(255,255,255,0.1); cursor: pointer; font-weight: 600;
+    background: rgba(0,255,255,0.06); color: #00ffff;
+    border: 1px solid rgba(0,255,255,0.3); cursor: pointer; font-weight: 600;
+    transition: all 0.2s;
   }
+  button.ghost:hover { background: rgba(0,255,255,0.15); box-shadow: 0 0 12px rgba(0,255,255,0.4); }
   input.txt {
     padding: 12px 16px; border-radius: 12px;
-    background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
-    color: #fff; font-size: 15px; width: 180px;
+    background: rgba(0,0,0,0.5); border: 1px solid rgba(255,0,255,0.3);
+    color: #fff; font-size: 15px; width: 180px; letter-spacing: 2px; text-align: center;
   }
-  input.txt:focus { outline: none; border-color: #f59e0b; }
+  input.txt:focus { outline: none; border-color: #00ffff; box-shadow: 0 0 12px rgba(0,255,255,0.5); }
   .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  .progress { margin-top: 14px; font-size: 13px; color: #94a3b8; }
-  .bar { height: 6px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow: hidden; margin-top: 8px; }
-  .bar > div { height: 100%; background: linear-gradient(90deg,#f59e0b,#ef4444); transition: width 0.3s; }
+  .progress { margin-top: 14px; font-size: 13px; color: #ff69b4; }
+  .bar { height: 6px; background: rgba(255,255,255,0.05); border-radius: 99px; overflow: hidden; margin-top: 8px;
+         border: 1px solid rgba(255,0,255,0.15); }
+  .bar > div { height: 100%; background: linear-gradient(90deg, #ff00ff, #00ffff); transition: width 0.3s;
+               box-shadow: 0 0 8px rgba(255,0,255,0.6); }
   .leader-card {
-    padding: 16px; border-radius: 14px; background: rgba(0,0,0,0.25);
-    border: 1px solid rgba(255,255,255,0.06); margin-top: 12px;
+    padding: 16px; border-radius: 14px; background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,0,255,0.15); margin-top: 12px;
+    transition: border-color 0.3s;
   }
+  .leader-card:hover { border-color: rgba(0,255,255,0.4); }
   .leader-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-  .leader-name { font-weight: 700; font-size: 16px; }
-  .leader-code { color: #64748b; font-size: 12px; margin-left: 6px; }
-  .pct-up { color: #f87171; font-weight: 700; }
-  .theme-tag { display: inline-block; font-size: 11px; padding: 3px 10px; border-radius: 999px; background: rgba(245,158,11,0.12); color: #fbbf24; margin-bottom: 8px; }
+  .leader-name { font-weight: 800; font-size: 16px; color: #fff; }
+  .leader-code { color: #94a3b8; font-size: 12px; margin-left: 6px; }
+  .pct-up { color: #ff1493; font-weight: 800; text-shadow: 0 0 6px rgba(255,20,147,0.5); }
+  .theme-tag {
+    display: inline-block; font-size: 11px; padding: 4px 12px; border-radius: 999px;
+    background: rgba(0,255,255,0.1); color: #00ffff; margin-bottom: 8px;
+    border: 1px solid rgba(0,255,255,0.2); letter-spacing: 1px;
+  }
   .scalp { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 10px; font-size: 12px; }
-  .scalp > div { background: rgba(255,255,255,0.03); padding: 8px; border-radius: 8px; text-align: center; }
-  .scalp .lbl { color: #64748b; font-size: 10px; margin-bottom: 2px; }
-  .scalp .val { font-weight: 700; color: #f1f5f9; }
-  .vwap-result { margin-top: 16px; padding: 16px; background: rgba(0,0,0,0.25); border-radius: 12px; display: none; }
+  .scalp > div { background: rgba(255,0,255,0.05); padding: 10px; border-radius: 8px; text-align: center;
+                 border: 1px solid rgba(255,0,255,0.1); }
+  .scalp .lbl { color: #ff69b4; font-size: 10px; margin-bottom: 4px; letter-spacing: 1px; }
+  .scalp .val { font-weight: 800; color: #fff; font-size: 13px; }
+  .vwap-result {
+    margin-top: 16px; padding: 16px;
+    background: rgba(0,0,0,0.5); border-radius: 12px; display: none;
+    border: 1px solid rgba(0,255,255,0.2);
+  }
   .vwap-result.active { display: block; }
   table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
-  th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); }
-  th { color: #94a3b8; font-weight: 600; font-size: 12px; }
-  tbody tr:hover { background: rgba(255,255,255,0.02); }
-  .empty { color: #64748b; padding: 24px; text-align: center; font-size: 13px; }
+  th, td { padding: 12px 8px; text-align: left; border-bottom: 1px solid rgba(255,0,255,0.08); }
+  th { color: #ff69b4; font-weight: 700; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+  tbody tr:hover { background: rgba(255,0,255,0.04); }
+  .empty { color: #64748b; padding: 24px; text-align: center; font-size: 13px; font-style: italic; }
   .warning { font-size: 12px; color: #fbbf24; margin-top: 8px; }
-  .basis-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: rgba(59,130,246,0.15); color: #93c5fd; }
+  .basis-badge {
+    font-size: 10px; padding: 2px 6px; border-radius: 4px;
+    background: rgba(0,255,255,0.15); color: #00ffff;
+    border: 1px solid rgba(0,255,255,0.3);
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <div class="logo">⚡ scgay</div>
+    <div class="logo">SCS</div>
     <a class="logout" href="/scgay/logout">로그아웃</a>
   </header>
 
   <div class="grid">
     <!-- 1) 분석 섹션 -->
     <div class="card full">
-      <h2>🔥 급등 대장주 분석 <span class="badge">+15% 누적</span></h2>
+      <h2>🍆 오늘 솟구친 봉 측정 <span class="badge">+15% 솟음</span></h2>
       <div class="row">
         <button class="primary" id="btn-scan">분석 시작</button>
         <span class="progress" id="status">대기 중</span>
@@ -97,7 +163,7 @@
 
     <!-- 2) VWAP 조회 -->
     <div class="card">
-      <h2>📊 종목 VWAP 조회</h2>
+      <h2>🕯️ 단일 봉 정밀 측정</h2>
       <div class="row">
         <input class="txt" id="vwap-code" maxlength="6" placeholder="종목코드 (006340)">
         <button class="primary" id="btn-vwap">조회</button>
