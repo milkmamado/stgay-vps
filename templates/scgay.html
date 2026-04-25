@@ -252,17 +252,7 @@
         <button class="primary" id="btn-vwap">조회</button>
       </div>
       <div class="vwap-result" id="vwap-out"></div>
-    </div>
-
-
-    <!-- 2-2) ABCD 패턴 판정 -->
-    <div class="card abcd-card">
-      <h2>🎯 ABCD 패턴 분석 <span class="badge">대장주 후보</span></h2>
-      <div class="row">
-        <input class="txt" id="abcd-code" maxlength="6" placeholder="종목코드 (006340)">
-        <button class="primary" id="btn-abcd">판정</button>
-      </div>
-      <div class="abcd-result" id="abcd-out"></div>
+      <div class="abcd-result" id="abcd-out-inline"></div>
     </div>
 
     <!-- 3) 아카이브 -->
@@ -407,8 +397,8 @@ async function loadArchive() {
 
 document.getElementById('btn-scan').onclick = startScan;
 const _btnR = document.getElementById('btn-result'); if(_btnR) _btnR.onclick = loadResult;
-document.getElementById('btn-vwap').onclick = checkVwap;
-document.getElementById('vwap-code').addEventListener('keydown', e => { if (e.key === 'Enter') checkVwap(); });
+document.getElementById('btn-vwap').onclick = async () => { await checkVwap(); checkAbcd(document.getElementById('vwap-code').value); };
+document.getElementById('vwap-code').addEventListener('keydown', e => { if (e.key === 'Enter') { checkVwap().then(()=>checkAbcd(document.getElementById('vwap-code').value)); } });
 
 // === ABCD 패턴 ===
 function abcdPhaseClass(phase) {
@@ -422,10 +412,10 @@ function abcdStarsRender(n) {
   if (!n) return '<span style="color:#666">☆☆☆</span>';
   return '<span style="color:#fbbf24">' + '⭐'.repeat(n) + '</span>';
 }
-async function checkAbcd() {
-  const code = document.getElementById('abcd-code').value.trim();
-  const out = document.getElementById('abcd-out');
-  if (!/^\d{6}$/.test(code)) { alert('6자리 종목코드 입력'); return; }
+async function checkAbcd(codeArg) {
+  const code = (codeArg || document.getElementById('vwap-code').value).trim();
+  const out = document.getElementById('abcd-out-inline');
+  if (!/^\d{6}$/.test(code)) { if(!codeArg) alert('6자리 종목코드 입력'); return; }
   out.className = 'abcd-result active';
   out.innerHTML = '<div style="color:#888">조회 중...</div>';
   try {
@@ -463,8 +453,6 @@ async function checkAbcd() {
     out.innerHTML = '<div style="color:#ef4444">❌ ' + (e.message || '오류') + '</div>';
   }
 }
-document.getElementById('btn-abcd').onclick = checkAbcd;
-document.getElementById('abcd-code').addEventListener('keydown', e => { if (e.key === 'Enter') checkAbcd(); });
 
 
 // 초기 로드
