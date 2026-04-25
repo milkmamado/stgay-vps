@@ -490,6 +490,33 @@ def _aggregate_1min_to_5min(candles_1min):
     return [buckets[k] for k in order]
 
 
+def _scgay_abcd_full(code):
+    """단일 종목 ABCD 풀 판정 (헬퍼). 성공 시 dict, 실패 시 예외 raise."""
+    from modules.surge_scanner import _fetch_naver_5min_candles
+    from modules.abcd_detector import detect_abcd_phase
+    try:
+        from pykrx import stock as _pykrx_stock
+        stock_name = _pykrx_stock.get_market_ticker_name(code) or code
+    except Exception:
+        stock_name = code
+    candles_1min = _fetch_naver_5min_candles(code, count=390) or []
+    if not candles_1min:
+        raise RuntimeError('분봉 데이터 없음 (장 시작 전이거나 거래 정지)')
+    candles_5min = _aggregate_1min_to_5min(candles_1min)
+    if not candles_5min:
+        raise RuntimeError('5분봉 집계 실패')
+    day_open = candles_5min[0]['open']
+    result = detect_abcd_phase(candles_5min, day_open=day_open)
+    trackable_phases = {'B', 'B→C 형성중', 'C', 'D'}
+    result['trackable'] = result['phase'] in trackable_phases
+    result['code'] = code
+    result['name'] = stock_name
+    result['day_open'] = round(day_open, 2)
+    result['candle_count_5min'] = len(candles_5min)
+    result['updated_at'] = _scgay_dt.now().strftime('%Y-%m-%d %H:%M:%S')
+    return result
+
+
 @app.route('/scgay/api/abcd_check')
 @scgay_login_required
 def scgay_api_abcd_check():
@@ -498,32 +525,9 @@ def scgay_api_abcd_check():
     if not (code.isdigit() and len(code) == 6):
         return jsonify({'error': '6자리 종목코드를 입력하세요'}), 400
     try:
-        from modules.surge_scanner import _fetch_naver_5min_candles
-        from modules.abcd_detector import detect_abcd_phase
-    except Exception as e:
-        return jsonify({'error': f'모듈 로드 실패: {e}'}), 500
-    try:
-        from pykrx import stock as _pykrx_stock
-        stock_name = _pykrx_stock.get_market_ticker_name(code) or code
-    except Exception:
-        stock_name = code
-    try:
-        candles_1min = _fetch_naver_5min_candles(code, count=390) or []
-        if not candles_1min:
-            return jsonify({'error': '분봉 데이터 없음 (장 시작 전이거나 거래 정지)'}), 404
-        candles_5min = _aggregate_1min_to_5min(candles_1min)
-        if not candles_5min:
-            return jsonify({'error': '5분봉 집계 실패'}), 500
-        day_open = candles_5min[0]['open']
-        result = detect_abcd_phase(candles_5min, day_open=day_open)
-        trackable_phases = {'B', 'B→C 형성중', 'C', 'D'}
-        result['trackable'] = result['phase'] in trackable_phases
-        result['code'] = code
-        result['name'] = stock_name
-        result['day_open'] = round(day_open, 2)
-        result['candle_count_5min'] = len(candles_5min)
-        result['updated_at'] = _scgay_dt.now().strftime('%Y-%m-%d %H:%M:%S')
-        return jsonify(result)
+        return jsonify(_scgay_abcd_full(code))
+    except RuntimeError as e:
+        return jsonify({'error': str(e)}), 404
     except Exception as e:
         import traceback
         return jsonify({'error': f'ABCD 판정 실패: {e}', 'trace': traceback.format_exc()[-500:]}), 500
@@ -536,7 +540,7 @@ def scgay_api_abcd_check():
 import os as _stalk_os
 import json as _stalk_json
 from datetime import datetime as _stalk_dt
-from modules.abcd_detector import detect_abcd_phase as _stalk_detect
+# _stalk_detect는 _scgay_abcd_full 헬퍼로 대체됨
 
 SCGAY_STALKING_FILE = '/opt/stock-crawler/data/scgay_stalking.json'
 SCGAY_STALKING_ENABLED_FLAG = '/opt/stock-crawler/data/scgay_stalking_enabled'
@@ -564,7 +568,7 @@ def scgay_stalking_list():
     enriched = []
     for it in items:
         try:
-            abcd = _stalk_detect(it['code'])
+            abcd = _scgay_abcd_full(it['code'])
             enriched.append({
                 **it,
                 'phase': abcd.get('phase', 'NONE'),
@@ -598,7 +602,7 @@ def scgay_stalking_add():
         return jsonify({'error': '이미 추적 중', 'code': code}), 409
     # ABCD로 종목명 가져오기
     try:
-        abcd = _stalk_detect(code)
+        abcd = _scgay_abcd_full(code)
         name = abcd.get('name', '')
     except Exception:
         name = ''
