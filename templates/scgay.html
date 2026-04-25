@@ -129,6 +129,25 @@
     border: 1px solid rgba(0,255,255,0.2);
   }
   .vwap-result.active { display: block; }
+  
+  /* 🍿 육봉 스토킹 */
+  .stalking-card .row { gap: 8px; }
+  .stalking-toolbar { display:flex; justify-content:space-between; align-items:center; margin: 10px 0 12px; flex-wrap: wrap; gap: 8px; }
+  .stalking-status-pill { padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 700; }
+  .stalking-status-on { background: rgba(34,197,94,0.2); color: #4ade80; border: 1px solid rgba(34,197,94,0.4); }
+  .stalking-status-off { background: rgba(120,120,120,0.15); color: #888; border: 1px solid rgba(255,255,255,0.1); }
+  .stalking-toggle-btn { padding: 6px 14px; border-radius: 99px; font-size: 12px; font-weight: 700; cursor: pointer; border: none; }
+  .stalking-toggle-on { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; }
+  .stalking-toggle-off { background: linear-gradient(135deg, #ef4444, #b91c1c); color: white; }
+  .stalking-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+  .stalking-table th { text-align: left; padding: 8px 6px; color: #94a3b8; font-size: 11px; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .stalking-table td { padding: 10px 6px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .stalking-table tr:hover { background: rgba(255,0,255,0.04); }
+  .stalking-empty { padding: 20px; text-align: center; color: #64748b; font-size: 13px; }
+  .stalking-trash { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #fb7185; padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 11px; }
+  .stalking-trash:hover { background: rgba(239,68,68,0.25); }
+  .stalking-phase-pill { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 700; }
+  
   .abcd-result { display:none; margin-top:12px; padding:12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; }
   .abcd-result.active { display:block; }
   .abcd-phase-pill { display:inline-block; padding:4px 12px; border-radius:999px; font-weight:700; font-size:13px; margin-right:8px; }
@@ -255,6 +274,23 @@
       <div class="abcd-result" id="abcd-out-inline"></div>
     </div>
 
+    <!-- 2-3) 🍿 육봉 스토킹 -->
+    <div class="card stalking-card">
+      <h2>🍿 육봉 스토킹 <span class="badge" id="stk-count">0건</span></h2>
+      <div class="stalking-toolbar">
+        <div>
+          <span id="stk-status-pill" class="stalking-status-pill stalking-status-off">⏹️ 크론 OFF</span>
+          <span style="color:#64748b;font-size:11px;margin-left:8px">2분 주기 · 09:30~14:30</span>
+        </div>
+        <button id="btn-stk-toggle" class="stalking-toggle-btn stalking-toggle-on">▶️ 스토킹 시작</button>
+      </div>
+      <div class="row">
+        <input class="txt" id="stk-code" maxlength="6" placeholder="추적할 종목코드 (006340)">
+        <button class="primary" id="btn-stk-add">➕ 추가</button>
+      </div>
+      <div id="stk-list"><div class="stalking-empty">아직 추적 중인 종목이 없어요</div></div>
+    </div>
+
     <!-- 3) 아카이브 -->
     <div class="card">
       <h2>📁 분석 아카이브 <span class="badge" id="arc-count">0건</span></h2>
@@ -372,6 +408,107 @@ async function checkVwap() {
   }
 }
 
+// === 🍿 육봉 스토킹 ===
+function stkPhaseClass(phase) {
+  if (phase === 'C+') return 'abcd-phase-Cplus';
+  if (phase && phase.startsWith('B→C')) return 'abcd-phase-wait';
+  if (phase && phase.startsWith('A→B')) return 'abcd-phase-B';
+  if (phase === 'C') return 'abcd-phase-C';
+  if (phase === 'A 형성중') return 'abcd-phase-A';
+  return 'abcd-phase-NONE';
+}
+function stkStars(n) {
+  if (!n) return '<span style="color:#666">☆☆☆</span>';
+  return '<span style="color:#fbbf24">' + '⭐'.repeat(n) + '</span>';
+}
+async function loadStalking() {
+  try {
+    const r = await fetch('/scgay/api/stalking/list');
+    const d = await r.json();
+    document.getElementById('stk-count').textContent = (d.count || 0) + '건';
+
+    // 상태 알약 + 토글 버튼
+    const pill = document.getElementById('stk-status-pill');
+    const btn = document.getElementById('btn-stk-toggle');
+    if (d.enabled) {
+      pill.className = 'stalking-status-pill stalking-status-on';
+      pill.textContent = '🟢 크론 ON';
+      btn.className = 'stalking-toggle-btn stalking-toggle-off';
+      btn.textContent = '🛑 스토킹 중단';
+    } else {
+      pill.className = 'stalking-status-pill stalking-status-off';
+      pill.textContent = '⏹️ 크론 OFF';
+      btn.className = 'stalking-toggle-btn stalking-toggle-on';
+      btn.textContent = '▶️ 스토킹 시작';
+    }
+
+    // 리스트 렌더링
+    const el = document.getElementById('stk-list');
+    if (!d.items || !d.items.length) {
+      el.innerHTML = '<div class="stalking-empty">아직 추적 중인 종목이 없어요</div>';
+      return;
+    }
+    el.innerHTML = `<table class="stalking-table">
+      <thead><tr>
+        <th>종목</th><th>Phase</th><th>별점</th><th>시가→B</th><th>등록</th><th></th>
+      </tr></thead>
+      <tbody>${d.items.map(it => {
+        const phaseClass = stkPhaseClass(it.phase);
+        const cplusBadge = it.c_plus_signal ? ' 🚨' : '';
+        return `<tr>
+          <td><b style="color:#fff">${it.name || it.code}</b><br><span style="color:#64748b;font-size:10px">${it.code}</span></td>
+          <td><span class="stalking-phase-pill ${phaseClass}">${it.phase || 'NONE'}${cplusBadge}</span></td>
+          <td>${stkStars(it.reliability_stars)}</td>
+          <td style="color:#fbbf24">+${(it.surge_from_open_pct||0).toFixed(1)}%</td>
+          <td style="color:#64748b;font-size:11px">${(it.added_at||'').slice(5,16)}</td>
+          <td><button class="stalking-trash" data-code="${it.code}">🗑️</button></td>
+        </tr>`;
+      }).join('')}</tbody></table>`;
+
+    // 휴지통 핸들러 바인딩
+    el.querySelectorAll('.stalking-trash').forEach(b => {
+      b.onclick = async (e) => {
+        const code = e.target.dataset.code;
+        if (!confirm(`${code} 추적 삭제?`)) return;
+        const r = await fetch('/scgay/api/stalking/remove?code=' + code, { method: 'DELETE' });
+        const d = await r.json();
+        if (!r.ok) { alert(d.error || '삭제 실패'); return; }
+        loadStalking();
+      };
+    });
+  } catch (e) {
+    document.getElementById('stk-list').innerHTML = '<div class="stalking-empty" style="color:#fb7185">❌ ' + (e.message || '오류') + '</div>';
+  }
+}
+async function addStalking() {
+  const code = document.getElementById('stk-code').value.trim();
+  if (!/^\d{6}$/.test(code)) { alert('6자리 종목코드 입력'); return; }
+  try {
+    const r = await fetch('/scgay/api/stalking/add?code=' + code, { method: 'POST' });
+    const d = await r.json();
+    if (!r.ok) { alert(d.error || '추가 실패'); return; }
+    document.getElementById('stk-code').value = '';
+    loadStalking();
+  } catch (e) {
+    alert('오류: ' + e.message);
+  }
+}
+async function toggleStalking() {
+  try {
+    const r = await fetch('/scgay/api/stalking/toggle', { method: 'POST' });
+    const d = await r.json();
+    if (!r.ok) { alert(d.error || '토글 실패'); return; }
+    loadStalking();
+  } catch (e) {
+    alert('오류: ' + e.message);
+  }
+}
+document.getElementById('btn-stk-add').onclick = addStalking;
+document.getElementById('btn-stk-toggle').onclick = toggleStalking;
+document.getElementById('stk-code').addEventListener('keydown', e => { if (e.key === 'Enter') addStalking(); });
+// 30초마다 자동 새로고침
+setInterval(loadStalking, 30000);
+
 // === 아카이브 ===
 async function loadArchive() {
   const r = await fetch('/scgay/api/archive');
@@ -457,6 +594,7 @@ async function checkAbcd(codeArg) {
 
 // 초기 로드
 loadArchive();
+loadStalking();
 fetch('/scgay/api/status').then(r => r.json()).then(d => {
   if (d.has_result) loadResult();
   if (d.running) pollStatus();
