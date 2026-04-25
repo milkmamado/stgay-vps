@@ -530,5 +530,115 @@ def scgay_api_abcd_check():
 
 
 
+
+
+# ============= 🍿 육봉 스토킹 (Phase B+C) =============
+import os as _stalk_os
+import json as _stalk_json
+from datetime import datetime as _stalk_dt
+from modules.abcd_detector import detect_abcd as _stalk_detect
+
+SCGAY_STALKING_FILE = '/opt/stock-crawler/data/scgay_stalking.json'
+SCGAY_STALKING_ENABLED_FLAG = '/opt/stock-crawler/data/scgay_stalking_enabled'
+
+
+def _stalk_load():
+    try:
+        with open(SCGAY_STALKING_FILE, 'r', encoding='utf-8') as f:
+            return _stalk_json.load(f) or []
+    except Exception:
+        return []
+
+
+def _stalk_save(items):
+    _stalk_os.makedirs(_stalk_os.path.dirname(SCGAY_STALKING_FILE), exist_ok=True)
+    with open(SCGAY_STALKING_FILE, 'w', encoding='utf-8') as f:
+        _stalk_json.dump(items, f, ensure_ascii=False, indent=2)
+
+
+@app.route('/scgay/api/stalking/list')
+@scgay_login_required
+def scgay_stalking_list():
+    """추적 리스트 + 각 종목의 현재 ABCD phase"""
+    items = _stalk_load()
+    enriched = []
+    for it in items:
+        try:
+            abcd = _stalk_detect(it['code'])
+            enriched.append({
+                **it,
+                'phase': abcd.get('phase', 'NONE'),
+                'name': abcd.get('name') or it.get('name', ''),
+                'reliability_stars': abcd.get('reliability_stars', 0),
+                'surge_from_open_pct': abcd.get('surge_from_open_pct', 0),
+                'c_plus_signal': abcd.get('c_plus_signal', False),
+                'updated_at': abcd.get('updated_at', ''),
+            })
+        except Exception as e:
+            enriched.append({**it, 'phase': 'ERROR', 'error': str(e)[:80]})
+    return jsonify({
+        'items': enriched,
+        'enabled': _stalk_os.path.exists(SCGAY_STALKING_ENABLED_FLAG),
+        'count': len(enriched),
+    })
+
+
+@app.route('/scgay/api/stalking/add', methods=['POST'])
+@scgay_login_required
+def scgay_stalking_add():
+    code = (request.args.get('code') or request.json.get('code') if request.is_json else request.args.get('code', '')).strip() if False else (request.args.get('code') or '').strip()
+    # 위 한줄이 복잡해서 다시:
+    code = (request.args.get('code') or '').strip()
+    if not request.args.get('code') and request.is_json:
+        code = (request.json.get('code') or '').strip()
+    if not (code.isdigit() and len(code) == 6):
+        return jsonify({'error': '6자리 종목코드 필요'}), 400
+    items = _stalk_load()
+    if any(it['code'] == code for it in items):
+        return jsonify({'error': '이미 추적 중', 'code': code}), 409
+    # ABCD로 종목명 가져오기
+    try:
+        abcd = _stalk_detect(code)
+        name = abcd.get('name', '')
+    except Exception:
+        name = ''
+    items.append({
+        'code': code,
+        'name': name,
+        'added_at': _stalk_dt.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'last_alerted_phase': None,  # C / C+ 알림 중복 방지용
+        'alert_count': 0,
+    })
+    _stalk_save(items)
+    return jsonify({'ok': True, 'code': code, 'name': name, 'total': len(items)})
+
+
+@app.route('/scgay/api/stalking/remove', methods=['POST', 'DELETE'])
+@scgay_login_required
+def scgay_stalking_remove():
+    code = (request.args.get('code') or '').strip()
+    if not (code.isdigit() and len(code) == 6):
+        return jsonify({'error': '6자리 종목코드 필요'}), 400
+    items = _stalk_load()
+    new_items = [it for it in items if it['code'] != code]
+    if len(new_items) == len(items):
+        return jsonify({'error': '추적 목록에 없음', 'code': code}), 404
+    _stalk_save(new_items)
+    return jsonify({'ok': True, 'code': code, 'remaining': len(new_items)})
+
+
+@app.route('/scgay/api/stalking/toggle', methods=['POST'])
+@scgay_login_required
+def scgay_stalking_toggle():
+    """크론 ON/OFF 토글 (플래그 파일 존재 여부)"""
+    _stalk_os.makedirs(_stalk_os.path.dirname(SCGAY_STALKING_ENABLED_FLAG), exist_ok=True)
+    if _stalk_os.path.exists(SCGAY_STALKING_ENABLED_FLAG):
+        _stalk_os.remove(SCGAY_STALKING_ENABLED_FLAG)
+        return jsonify({'enabled': False, 'msg': '🛑 스토킹 중단'})
+    else:
+        Path(SCGAY_STALKING_ENABLED_FLAG).touch()
+        return jsonify({'enabled': True, 'msg': '▶️ 스토킹 시작'})
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5003, debug=False)
