@@ -1153,25 +1153,26 @@ label[for*="surge"] {
 <script>
 (function(){
     function nowKstMinutes(){
-        const d = new Date();
-        const utc = d.getTime() + d.getTimezoneOffset()*60000;
-        const kst = new Date(utc + 9*3600000);
+        var d = new Date();
+        var utc = d.getTime() + d.getTimezoneOffset()*60000;
+        var kst = new Date(utc + 9*3600000);
         return { h: kst.getHours(), m: kst.getMinutes(), day: kst.getDay() };
     }
     function fmt(h,m){ return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'); }
     function toMin(s){ return parseInt(s.slice(0,2))*60 + parseInt(s.slice(2)); }
     function pickZone(h,m,day){
-        const cur = h*60 + m;
+        var cur = h*60 + m;
         if (day === 0 || day === 6) return {cls:'closed', label:'휴장', msg:'주말 — 다음 거래일 10:00 황금 시간대 대기 🌙'};
         if (cur < 9*60)        return {cls:'closed', label:'장 시작 전', msg:'09:00 개장 대기 — 09:30까지는 관망 권장'};
         if (cur >= 15*60+30)   return {cls:'closed', label:'장 마감', msg:'오늘 장 마감 — 내일 10:00 골든존에서 만나요 ☕'};
-        const rows = document.querySelectorAll('#scsZoneTable tbody tr');
-        for (const tr of rows){
-            const s = toMin(tr.dataset.s), e = toMin(tr.dataset.e);
+        var rows = document.querySelectorAll('#scsZoneTable tbody tr');
+        for (var i=0; i<rows.length; i++){
+            var tr = rows[i];
+            var s = toMin(tr.dataset.s), e = toMin(tr.dataset.e);
             if (cur >= s && cur < e){
-                const tag = tr.querySelector('.scs-zone-tag');
-                const tagCls = tag.classList.contains('g') ? 'golden' : tag.classList.contains('r') ? 'danger' : 'caution';
-                const label = tagCls === 'golden' ? '🟢 GOLDEN ZONE' : tagCls === 'danger' ? '🔴 DANGER ZONE' : '🟡 CAUTION ZONE';
+                var tag = tr.querySelector('.scs-zone-tag');
+                var tagCls = tag.classList.contains('g') ? 'golden' : tag.classList.contains('r') ? 'danger' : 'caution';
+                var label = tagCls === 'golden' ? '🟢 GOLDEN ZONE' : tagCls === 'danger' ? '🔴 DANGER ZONE' : '🟡 CAUTION ZONE';
                 tr.classList.add('now');
                 return {cls:tagCls, label:label, msg:'<b>'+tr.children[0].textContent+'</b> · '+tr.children[2].textContent};
             }
@@ -1179,27 +1180,28 @@ label[for*="surge"] {
         return {cls:'closed', label:'--', msg:'시간대 정보 없음'};
     }
     function refresh(){
-        const t = nowKstMinutes();
-        document.querySelectorAll('#scsZoneTable tr.now').forEach(r=>r.classList.remove('now'));
-        const z = pickZone(t.h, t.m, t.day);
-        const pill = document.getElementById('scsZonePill');
-        const msg = document.getElementById('scsZoneMsg');
+        var t = nowKstMinutes();
+        var nows = document.querySelectorAll('#scsZoneTable tr.now');
+        for (var i=0; i<nows.length; i++) nows[i].classList.remove('now');
+        var z = pickZone(t.h, t.m, t.day);
+        var pill = document.getElementById('scsZonePill');
+        var msg = document.getElementById('scsZoneMsg');
         if (!pill || !msg) return;
         pill.className = 'scs-zone-pill ' + z.cls;
         pill.textContent = '⏰ ' + fmt(t.h,t.m) + ' · ' + z.label;
         msg.innerHTML = z.msg;
     }
     window.toggleScsZone = function(e){
-        const card = document.getElementById('scsZoneCard');
+        var card = document.getElementById('scsZoneCard');
         if (!card) return;
         if (e && e.target.closest('.scs-zone-body')) return;
         card.classList.toggle('open');
-        const tog = card.querySelector('.scs-zone-toggle');
+        var tog = card.querySelector('.scs-zone-toggle');
         if (tog) tog.textContent = card.classList.contains('open') ? '▴ 접기' : '▾ 펼치기';
     };
     document.addEventListener('DOMContentLoaded', function(){
         refresh();
-        setInterval(refresh, 60*1000);
+        setInterval(refresh, 60000);
     });
 })();
 </script>
