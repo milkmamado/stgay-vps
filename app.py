@@ -351,6 +351,18 @@ def scgay_api_vwap():
         day_high = max(float(c['high']) for c in candles)
         price = float(current) if current else float(candles[-1]['close'])
 
+        recent_avg_vol = sum(float(c.get('volume', 0)) for c in recent) / max(1, len(recent))
+        last_vol = float(recent[-1].get('volume', 0))
+        volume_ratio = round(last_vol / max(1.0, recent_avg_vol), 2)
+        if volume_ratio >= 1.5:
+            volume_signal = '🟢 활발'
+        elif volume_ratio >= 1.0:
+            volume_signal = '🟡 보통'
+        else:
+            volume_signal = '🔴 약함'
+        vwap_position = '위 (강세)' if price > vwap else ('아래 (약세)' if price < vwap else '동일')
+        disparity_pct = round((price - vwap) / max(1.0, vwap) * 100, 2)
+
         entry_low = round(max(recent_low, vwap * 0.997))
         entry_high = round(vwap * 1.005)
         if entry_high <= entry_low:
@@ -373,6 +385,10 @@ def scgay_api_vwap():
             'stop': stop,
             'rr_ratio': rr,
             'candle_count': len(candles),
+            'volume_ratio': volume_ratio,
+            'volume_signal': volume_signal,
+            'vwap_position': vwap_position,
+            'disparity_pct': disparity_pct,
             'basis': '네이버 1분봉 VWAP+지지',
             'updated_at': _scgay_dt.now().strftime('%Y-%m-%d %H:%M:%S'),
         })
