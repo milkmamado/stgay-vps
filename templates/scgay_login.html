@@ -3,49 +3,138 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>scgay — 입장</title>
+<title>SCS — Six Candle System</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    background: radial-gradient(ellipse at top, #1a0033 0%, #000 70%);
     min-height: 100vh; display: flex; align-items: center; justify-content: center;
-    color: #e2e8f0;
+    color: #e2e8f0; overflow: hidden; position: relative;
   }
+
+  /* === 둥둥 떠다니는 캔들 6개 === */
+  .candle {
+    position: absolute; font-size: 38px; opacity: 0.4;
+    animation: float 8s ease-in-out infinite;
+    filter: drop-shadow(0 0 12px #ff00ff);
+  }
+  .candle:nth-child(1) { top: 12%; left: 8%;  animation-delay: 0s;   }
+  .candle:nth-child(2) { top: 22%; right: 12%; animation-delay: 1.2s; }
+  .candle:nth-child(3) { top: 65%; left: 14%; animation-delay: 2.4s; }
+  .candle:nth-child(4) { top: 78%; right: 18%; animation-delay: 3.6s; }
+  .candle:nth-child(5) { top: 40%; left: 4%;  animation-delay: 4.8s; }
+  .candle:nth-child(6) { top: 50%; right: 6%; animation-delay: 6s;   }
+
+  @keyframes float {
+    0%,100% { transform: translateY(0)    rotate(-5deg); }
+    50%     { transform: translateY(-30px) rotate(5deg); }
+  }
+
+  /* === 네온 카드 === */
   .card {
-    background: rgba(255,255,255,0.05); backdrop-filter: blur(20px);
-    border: 1px solid rgba(255,255,255,0.1); border-radius: 24px;
-    padding: 48px 40px; width: 100%; max-width: 400px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    position: relative; z-index: 2;
+    background: rgba(20,0,40,0.7); backdrop-filter: blur(24px);
+    border: 2px solid #ff00ff; border-radius: 24px;
+    padding: 48px 40px; width: 100%; max-width: 420px;
+    box-shadow:
+      0 0 40px rgba(255,0,255,0.4),
+      0 0 80px rgba(0,255,255,0.2),
+      inset 0 0 30px rgba(255,0,255,0.1);
   }
-  h1 { font-size: 28px; margin-bottom: 8px; background: linear-gradient(135deg,#f59e0b,#ef4444); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; }
-  .sub { color: #94a3b8; font-size: 14px; margin-bottom: 32px; }
+
+  .neon-title {
+    font-size: 38px; font-weight: 900; text-align: center;
+    color: #fff; letter-spacing: 4px; margin-bottom: 4px;
+    text-shadow:
+      0 0 8px #ff00ff, 0 0 16px #ff00ff,
+      0 0 32px #ff00ff, 0 0 48px #ff1493;
+    animation: flicker 3s infinite alternate;
+  }
+  @keyframes flicker {
+    0%, 95%, 100% { opacity: 1; }
+    96%, 98%      { opacity: 0.7; }
+    97%           { opacity: 0.3; }
+  }
+
+  .subtitle-en {
+    text-align: center; color: #00ffff; font-size: 13px;
+    letter-spacing: 6px; margin-bottom: 4px; font-weight: 600;
+    text-shadow: 0 0 8px #00ffff;
+  }
+  .subtitle-kr {
+    text-align: center; color: #ff69b4; font-size: 14px;
+    margin-bottom: 32px; font-style: italic;
+  }
+
   input[type=password] {
-    width: 100%; padding: 14px 18px; border-radius: 14px;
-    background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+    width: 100%; padding: 16px 20px; border-radius: 14px;
+    background: rgba(0,0,0,0.5); border: 1px solid #ff00ff;
     color: #fff; font-size: 16px; margin-bottom: 16px;
-    transition: all 0.2s;
+    text-align: center; letter-spacing: 4px;
+    transition: all 0.3s;
   }
-  input[type=password]:focus { outline: none; border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245,158,11,0.2); }
+  input[type=password]:focus {
+    outline: none; border-color: #00ffff;
+    box-shadow: 0 0 20px rgba(0,255,255,0.6);
+  }
+  input::placeholder { color: #94a3b8; letter-spacing: 1px; }
+
   button {
-    width: 100%; padding: 14px; border-radius: 999px; border: none;
-    background: linear-gradient(135deg,#f59e0b,#ef4444); color: white;
-    font-weight: 700; font-size: 15px; cursor: pointer;
+    width: 100%; padding: 16px; border-radius: 999px; border: none;
+    background: linear-gradient(135deg, #ff00ff, #ff1493, #00ffff);
+    background-size: 200% 200%;
+    color: white; font-weight: 800; font-size: 16px; cursor: pointer;
+    letter-spacing: 2px;
+    animation: gradient-shift 3s ease infinite;
+    box-shadow: 0 0 20px rgba(255,0,255,0.5);
     transition: transform 0.15s;
   }
-  button:hover { transform: translateY(-1px); }
-  .err { color: #ef4444; font-size: 13px; margin-top: 12px; text-align: center; }
+  @keyframes gradient-shift {
+    0%,100% { background-position: 0% 50%; }
+    50%     { background-position: 100% 50%; }
+  }
+  button:hover { transform: translateY(-2px) scale(1.02); }
+  button:active { transform: translateY(0) scale(0.98); }
+
+  .err {
+    color: #ff0066; font-size: 13px; margin-top: 14px; text-align: center;
+    text-shadow: 0 0 8px #ff0066;
+  }
+
+  .footer-note {
+    margin-top: 24px; text-align: center;
+    color: #64748b; font-size: 11px; line-height: 1.6;
+  }
+  .footer-note .disclaimer {
+    color: #ff69b4; font-style: italic; opacity: 0.7;
+  }
 </style>
 </head>
 <body>
+  <!-- 둥둥 떠다니는 캔들 6개 -->
+  <span class="candle">🕯️</span>
+  <span class="candle">🕯️</span>
+  <span class="candle">🕯️</span>
+  <span class="candle">🕯️</span>
+  <span class="candle">🕯️</span>
+  <span class="candle">🕯️</span>
+
   <div class="card">
-    <h1>⚡ scgay</h1>
-    <p class="sub">급등 대장주 전용 · 손부장님 모드</p>
+    <div class="neon-title">SCS</div>
+    <div class="subtitle-en">SIX · CANDLE · SYSTEM</div>
+    <div class="subtitle-kr">🍆 오늘 솟구친 봉을 측정해드립니다</div>
+
     <form method="post">
-      <input type="password" name="password" placeholder="입장 비밀번호" autofocus required>
-      <button type="submit">입장</button>
-      {% if error %}<div class="err">{{ error }}</div>{% endif %}
+      <input type="password" name="password" placeholder="● ● ● ● ● ●" autofocus required>
+      <button type="submit">📏 측정 시작</button>
+      {% if error %}<div class="err">⚠️ {{ error }}</div>{% endif %}
     </form>
+
+    <div class="footer-note">
+      Powered by 손부장 Capital · 급등 대장주 전용<br>
+      <span class="disclaimer">* 본 시스템은 캔들봉만 분석합니다 (절대 다른 거 아님)</span>
+    </div>
   </div>
 </body>
 </html>
