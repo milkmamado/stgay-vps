@@ -1,26 +1,32 @@
 """
-ABCD 패턴 판정 모듈 (SCGAY 전용)
+ABCD 패턴 판정 모듈 v2 (SCGAY 전용) - 옵션 B 단순화
 ====================================
-당일 테마 대장주의 A→B→C→D 가격 흐름을 판별합니다.
+역할 분리:
+- ABCD = 대장주 후보 발견 (러프, 페이크 알림 일부 OK)
+- VWAP = 진입 결정 (별도 API /scgay/api/vwap 사용)
 
-A: 당일 시가 또는 직전 30분 저점 중 더 낮은 값 (진짜 지지선)
-B: A 이후 당일 최고가 (상승 정점)
-C: B 이후 보합 구간 (눌림목, 변동폭 30% 이내 3봉)
-D: C 이후 재상승 목표가 (B + (B-A)*0.5 ~ 1.0)
+v2 변경 (옵션 B):
+- ✅ B 후 최소 30분 경과 (명백한 페이크 차단)
+- ✅ C+ 신호탄 (조용한 양봉 = D 임박)
+- ❌ 거래량 체크 (VWAP에 위임)
+- ❌ 단봉 체크 (VWAP에 위임)
 """
 
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 
 
-# ──────────────────────────────────────────────────────────
-# 임계값 상수
-# ──────────────────────────────────────────────────────────
 MIN_SURGE_FROM_OPEN_PCT = 5.0
 MIN_AB_RISE_PCT = 5.0
 C_CONSOLIDATION_BARS = 3
 C_RANGE_RATIO = 0.30
 LOOKBACK_BARS_FOR_A = 12
+
+MIN_BARS_AFTER_B = 6
+
+C_PLUS_BODY_PCT_MIN = 0.02
+C_PLUS_BODY_PCT_MAX = 0.05
+C_PLUS_VOLUME_RATIO = 0.30
 
 
 def detect_abcd_phase(
@@ -36,6 +42,9 @@ def detect_abcd_phase(
         'd_target_min': None, 'd_target_max': None,
         'surge_from_open_pct': 0.0, 'surge_from_a_pct': 0.0,
         'reliability_stars': 0, 'partial': False,
+        'bars_after_b': 0,
+        'c_plus_signal': False,
+        'c_plus_reason': None,
     }
 
     if not candles_5min or len(candles_5min) < 1:
@@ -90,13 +99,23 @@ def detect_abcd_phase(
 
     b_idx = max(range(len(candles_5min)), key=lambda i: candles_5min[i]['high'])
     b_time_str = candles_5min[b_idx].get('time', '09:00')
+    b_volume = candles_5min[b_idx].get('volume', 0)
     result_skeleton['reliability_stars'] = _calc_reliability_stars_by_time(b_time_str)
 
     bars_after_b = candles_5min[b_idx + 1:]
+    result_skeleton['bars_after_b'] = len(bars_after_b)
 
     if len(bars_after_b) < C_CONSOLIDATION_BARS:
         result_skeleton['phase'] = 'B'
         result_skeleton['reason'] = f'B 도달, C 형성 대기 중 ({len(bars_after_b)}/{C_CONSOLIDATION_BARS}봉)'
+        return result_skeleton
+
+    if len(bars_after_b) < MIN_BARS_AFTER_B:
+        result_skeleton['phase'] = 'B→C 대기'
+        result_skeleton['reason'] = (
+            f'B 직후 {len(bars_after_b)*5}분 경과 '
+            f'(최소 {MIN_BARS_AFTER_B*5}분 필요, 페이크 C 1차 차단)'
+        )
         return result_skeleton
 
     recent = bars_after_b[-C_CONSOLIDATION_BARS:]
@@ -124,6 +143,12 @@ def detect_abcd_phase(
             f'C 확정 (변동폭 {range_ratio*100:.0f}% / 30%, '
             f'{C_CONSOLIDATION_BARS}봉 보합)'
         )
+        c_plus = _detect_c_plus_signal(candles_5min, b_volume)
+        if c_plus['signal']:
+            result_skeleton['phase'] = 'C+'
+            result_skeleton['c_plus_signal'] = True
+            result_skeleton['c_plus_reason'] = c_plus['reason']
+            result_skeleton['reason'] += f" | 🚨 C+ 신호탄: {c_plus['reason']}"
         return result_skeleton
 
     if c_low < a_price:
@@ -134,6 +159,35 @@ def detect_abcd_phase(
     result_skeleton['phase'] = 'B→C 형성중'
     result_skeleton['reason'] = f'C 형성 진행 중 (변동폭 {range_ratio*100:.0f}% > 30%)'
     return result_skeleton
+
+
+def _detect_c_plus_signal(candles_5min: List[Dict[str, Any]], b_volume: float) -> Dict[str, Any]:
+    if not candles_5min or b_volume <= 0:
+        return {'signal': False, 'reason': None}
+    
+    last = candles_5min[-1]
+    last_open = last.get('open', 0)
+    last_close = last.get('close', 0)
+    last_vol = last.get('volume', 0)
+    
+    if last_open <= 0:
+        return {'signal': False, 'reason': None}
+    
+    if last_close <= last_open:
+        return {'signal': False, 'reason': None}
+    
+    body_pct = (last_close - last_open) / last_open
+    if body_pct < C_PLUS_BODY_PCT_MIN or body_pct > C_PLUS_BODY_PCT_MAX:
+        return {'signal': False, 'reason': None}
+    
+    vol_ratio = last_vol / b_volume
+    if vol_ratio > C_PLUS_VOLUME_RATIO:
+        return {'signal': False, 'reason': None}
+    
+    return {
+        'signal': True,
+        'reason': f'조용한 양봉 +{body_pct*100:.1f}% (거래량 B의 {vol_ratio*100:.0f}%)'
+    }
 
 
 def _calc_reliability_stars_by_time(b_time_str: str) -> int:
@@ -159,18 +213,39 @@ def _calc_reliability_stars(now: datetime, surge_pct: float) -> int:
 
 
 if __name__ == '__main__':
-    sample = [
-        {'time': '09:00', 'open': 8800, 'high': 9000, 'low': 8800, 'close': 8950},
-        {'time': '09:05', 'open': 8950, 'high': 9100, 'low': 8900, 'close': 9050},
-        {'time': '09:10', 'open': 9050, 'high': 9200, 'low': 9000, 'close': 9150},
-        {'time': '09:15', 'open': 9150, 'high': 9300, 'low': 9100, 'close': 9250},
-        {'time': '09:20', 'open': 9250, 'high': 9400, 'low': 9200, 'close': 9350},
-        {'time': '09:25', 'open': 9350, 'high': 9450, 'low': 9300, 'close': 9400},
-        {'time': '09:30', 'open': 9400, 'high': 9420, 'low': 9300, 'close': 9320},
-        {'time': '09:35', 'open': 9320, 'high': 9350, 'low': 9250, 'close': 9280},
-        {'time': '09:40', 'open': 9280, 'high': 9320, 'low': 9230, 'close': 9270},
+    print('=== TEST 1: 정통 대장주 + C+ 신호탄 (예상 phase: C+) ===')
+    sample_good = [
+        {'time': '09:00', 'open': 8800, 'high': 9000, 'low': 8800, 'close': 8950, 'volume': 50000},
+        {'time': '09:05', 'open': 8950, 'high': 9100, 'low': 8900, 'close': 9050, 'volume': 80000},
+        {'time': '09:10', 'open': 9050, 'high': 9200, 'low': 9000, 'close': 9150, 'volume': 100000},
+        {'time': '09:15', 'open': 9150, 'high': 9300, 'low': 9100, 'close': 9250, 'volume': 150000},
+        {'time': '09:20', 'open': 9250, 'high': 9400, 'low': 9200, 'close': 9350, 'volume': 200000},
+        {'time': '09:25', 'open': 9350, 'high': 9450, 'low': 9300, 'close': 9400, 'volume': 300000},
+        {'time': '09:30', 'open': 9400, 'high': 9420, 'low': 9300, 'close': 9320, 'volume': 60000},
+        {'time': '09:35', 'open': 9320, 'high': 9350, 'low': 9250, 'close': 9280, 'volume': 40000},
+        {'time': '09:40', 'open': 9280, 'high': 9320, 'low': 9230, 'close': 9270, 'volume': 30000},
+        {'time': '09:45', 'open': 9270, 'high': 9310, 'low': 9250, 'close': 9290, 'volume': 25000},
+        {'time': '09:50', 'open': 9290, 'high': 9330, 'low': 9260, 'close': 9310, 'volume': 20000},
+        {'time': '09:55', 'open': 9310, 'high': 9350, 'low': 9290, 'close': 9320, 'volume': 18000},
+        {'time': '10:00', 'open': 9320, 'high': 9420, 'low': 9310, 'close': 9410, 'volume': 50000},
     ]
-    res = detect_abcd_phase(sample, day_open=8800)
-    print('SCGAY ABCD 자체 테스트 (정통 대장주):')
+    res = detect_abcd_phase(sample_good, day_open=8800)
+    for k, v in res.items():
+        print(f'  {k}: {v}')
+
+    print()
+    print('=== TEST 2: 페이크 C 차단 (예상 phase: B→C 대기) ===')
+    sample_fake = [
+        {'time': '09:00', 'open': 8800, 'high': 9000, 'low': 8800, 'close': 8950, 'volume': 50000},
+        {'time': '09:05', 'open': 8950, 'high': 9100, 'low': 8900, 'close': 9050, 'volume': 80000},
+        {'time': '09:10', 'open': 9050, 'high': 9200, 'low': 9000, 'close': 9150, 'volume': 100000},
+        {'time': '09:15', 'open': 9150, 'high': 9300, 'low': 9100, 'close': 9250, 'volume': 150000},
+        {'time': '09:20', 'open': 9250, 'high': 9400, 'low': 9200, 'close': 9350, 'volume': 200000},
+        {'time': '09:25', 'open': 9350, 'high': 9450, 'low': 9300, 'close': 9400, 'volume': 300000},
+        {'time': '09:30', 'open': 9400, 'high': 9420, 'low': 9350, 'close': 9380, 'volume': 250000},
+        {'time': '09:35', 'open': 9380, 'high': 9410, 'low': 9360, 'close': 9390, 'volume': 220000},
+        {'time': '09:40', 'open': 9390, 'high': 9410, 'low': 9370, 'close': 9395, 'volume': 200000},
+    ]
+    res = detect_abcd_phase(sample_fake, day_open=8800)
     for k, v in res.items():
         print(f'  {k}: {v}')
