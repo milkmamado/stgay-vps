@@ -464,6 +464,95 @@ body {
 .calc-summary .sum-value { font-size: 16px; font-weight: 600; margin-top: 4px; }
 /* === /scgay-split === */
 
+
+/* 🎨 STGAY 트레이더 블루 톤 - 세로 스택 카드 */
+.stgay-section-card {
+  max-width: 980px;
+  margin: 24px auto;
+  background: linear-gradient(145deg, rgba(26,35,66,0.85), rgba(15,23,41,0.92));
+  border: 1px solid rgba(59,130,246,0.18);
+  border-radius: 18px;
+  padding: 28px 32px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04);
+  backdrop-filter: blur(12px);
+}
+.stgay-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #93c5fd;
+  margin: 0 0 6px;
+  letter-spacing: 0.3px;
+}
+.stgay-section-sub {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0 0 18px;
+}
+.stgay-archive-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+.stgay-archive-item {
+  background: rgba(15,23,41,0.6);
+  border: 1px solid rgba(59,130,246,0.12);
+  border-left: 3px solid #3b82f6;
+  border-radius: 10px;
+  padding: 14px 18px;
+  transition: all 0.18s;
+}
+.stgay-archive-item:hover {
+  border-left-color: #22d3ee;
+  background: rgba(15,23,41,0.85);
+  transform: translateX(2px);
+}
+.stgay-archive-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.stgay-archive-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+.stgay-archive-code {
+  font-size: 12px;
+  color: #64748b;
+  font-family: 'SF Mono', monospace;
+  margin-left: 8px;
+}
+.stgay-archive-date {
+  font-size: 12px;
+  color: #93c5fd;
+  background: rgba(59,130,246,0.12);
+  padding: 3px 10px;
+  border-radius: 12px;
+}
+.stgay-archive-meta {
+  font-size: 12px;
+  color: #94a3b8;
+}
+.stgay-archive-empty {
+  text-align: center;
+  padding: 32px 20px;
+  color: #64748b;
+  font-size: 14px;
+}
+.stgay-archive-count {
+  font-size: 12px;
+  color: #22d3ee;
+  font-weight: 500;
+  margin-left: 8px;
+}
+
 </style>
 </head>
 <body>
@@ -1010,7 +1099,52 @@ el.innerHTML = html;
         if (newsFlow.summary) h += '<div class="section"><div class="section-title">📰 뉴스 흐름</div><div class="extra-content">' + esc(newsFlow.summary) + '</div></div>';
 
         h += '<div class="footer"><p>⚠️ 본 분석은 AI 기반 참고 자료이며, 투자 결정은 본인의 판단에 따라 이루어져야 합니다.</p></div>';
-        h += '</div></body></html>';
+        h += '</div>
+<script>
+// === STGAY 분석 아카이브 ===
+async function loadStgayArchive() {
+  try {
+    const r = await fetch('/stgay/api/archive');
+    if (!r.ok) throw new Error('fetch fail');
+    const data = await r.json();
+    const list = document.getElementById('stgayArchiveList');
+    const cntEl = document.getElementById('stgayArchiveCount');
+    const items = data.items || [];
+    cntEl.textContent = `· 총 ${data.total || 0}건`;
+
+    if (items.length === 0) {
+      list.innerHTML = '<div class="stgay-archive-empty">아직 분석 기록이 없습니다. 위에서 첫 분석을 시작하세요!</div>';
+      return;
+    }
+    const esc = s => String(s||'').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+    list.innerHTML = items.map(it => `
+      <div class="stgay-archive-item">
+        <div class="stgay-archive-head">
+          <div>
+            <span class="stgay-archive-name">${esc(it.name || '분석')}</span>
+            ${it.code ? `<span class="stgay-archive-code">${esc(it.code)}</span>` : ''}
+          </div>
+          <span class="stgay-archive-date">${esc(it.date || '')}</span>
+        </div>
+        <div class="stgay-archive-meta">
+          🕐 ${esc(it.recorded_at || '')}
+          ${it.theme_count ? ` · 🏷 테마 ${it.theme_count}` : ''}
+          ${it.stock_count ? ` · 📈 종목 ${it.stock_count}` : ''}
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    console.error('[stgay] archive load err', e);
+    document.getElementById('stgayArchiveList').innerHTML =
+      '<div class="stgay-archive-empty">⚠️ 아카이브 불러오기 실패</div>';
+  }
+}
+// 페이지 로드 + 분석 완료시 갱신
+document.addEventListener('DOMContentLoaded', loadStgayArchive);
+window.refreshStgayArchive = loadStgayArchive;
+</script>
+
+</body></html>';
 
         const blob = new Blob([h], { type: 'text/html;charset=utf-8' });
         const a = document.createElement('a');
@@ -1102,6 +1236,19 @@ el.innerHTML = html;
     }
 
 </script>
-{% include 'pdcsi_widget.html' %}
+
+    <!-- 📁 STGAY 분석 아카이브 -->
+    <div class="stgay-section-card" id="stgayArchiveCard">
+      <h3 class="stgay-section-title">
+        📁 분석 아카이브
+        <span class="stgay-archive-count" id="stgayArchiveCount"></span>
+      </h3>
+      <p class="stgay-section-sub">최근 분석한 종목 기록 (최대 100건, 같은 날짜 중복 제거)</p>
+      <div class="stgay-archive-list" id="stgayArchiveList">
+        <div class="stgay-archive-empty">불러오는 중...</div>
+      </div>
+    </div>
+
+    {% include 'pdcsi_widget.html' %}
 </body>
 </html>
