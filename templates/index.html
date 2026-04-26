@@ -462,22 +462,6 @@ body {
 .calc-summary .sum-item { flex: 1; min-width: 120px; padding: 10px; background: var(--bg); border-radius: 6px; text-align: center; }
 .calc-summary .sum-label { font-size: 11px; color: var(--text-dim); }
 .calc-summary .sum-value { font-size: 16px; font-weight: 600; margin-top: 4px; }
-
-
-/* === scgay-split: hide surge UI === */
-[data-mode="surge"],
-.mode-surge,
-.surge-section,
-#surge-section,
-#surgeSection,
-.surge-card,
-.surge-leaders,
-button[data-mode="surge"],
-input[name="mode"][value="surge"],
-input[name="mode"][value="surge"] + label,
-label[for*="surge"] {
-  display: none !important;
-}
 /* === /scgay-split === */
 
 </style>
@@ -524,7 +508,6 @@ label[for*="surge"] {
         document.getElementById('downloadBtn').style.display = 'none';
 
         const swing = true;
-        const surge = false;
         const mode = 'swing';
         fetch('/stgay/api/start', {
             method: 'POST',
@@ -885,65 +868,7 @@ label[for*="surge"] {
 
         // Footer
         html += '<div class="footer"><p>⚠️ 본 분석은 AI 기반 참고 자료이며, 투자 결정은 본인의 판단에 따라 이루어져야 합니다.</p><p style="margin-top:4px">PigeonAI Stock Analyzer © 2025</p></div>';
-
-        // ===== 급등 테마 대장주 섹션 (TOP3 / 숨은보석 보존, 별도 추가) =====
-        try {
-            const surge = data.surge_leaders;
-            if (surge && Array.isArray(surge.leaders) && surge.leaders.length > 0) {
-                let sh = '<div class="section" style="border-top:1px solid #2a2a2a;margin-top:24px;padding-top:20px">';
-                sh += '<div class="section-title">🔥 급등 테마 대장주 <span style="font-size:11px;color:#888;font-weight:400;margin-left:8px">(공격형 보조 · 30% 이하 권장)</span></div>';
-                sh += '<div style="background:#1a1410;border:1px solid #4a2a1a;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#d99">⚠️ 추격매수 위험 구간 — 대장주 확인용입니다. 매수는 눌림목 형성 후 판단하세요. (메인은 위쪽 TOP3 눌림목 매매)</div>';
-                sh += '<div style="margin:8px 0 12px;padding:10px 12px;background:#0c1a2b;border:1px solid #1e3a5f;border-left:3px solid #60a5fa;border-radius:6px;font-size:11.5px;color:#cbd5e1;line-height:1.6">';
-                sh += '<div style="font-weight:700;color:#60a5fa;margin-bottom:4px">⏰ 최적 사용 시간대</div>';
-                sh += '<div><b style="color:#22c55e">08:30~08:50</b> 장 시작 전 — 일봉 모드, 진입가 미리 메모 + HTS 예약매수 ⭐</div>';
-                sh += '<div><b style="color:#eab308">09:00~09:30</b> 개장 직후 — 변동성 폭발, 관망 권장</div>';
-                sh += '<div><b style="color:#22c55e">09:30~14:30</b> 장중 — 5분봉 VWAP 모드, 실전 진입 ⭐</div>';
-                sh += '<div><b style="color:#ef4444">14:30~15:30</b> 마감 임박 — 다음날 갭 위험, 신규 진입 X</div>';
-                sh += '</div>';
-                sh += '<div style="font-size:12px;color:#888;margin-bottom:12px">스캔일: ' + esc(surge.scanned_date || '') + ' · 전체 +15% 급등 ' + (surge.total_surged || 0) + '종목 · 같은 테마 3종목+ 그룹만 표시</div>';
-                surge.leaders.forEach((g, i) => {
-                    const ld = g.leader || {};
-                    const grade = ld.market_cap_grade || '';
-                    const gradeBadge = grade === 'sweet_spot' ? '<span style="background:#2a4020;color:#9c9;padding:2px 8px;border-radius:10px;font-size:10px;margin-left:6px">스위트스팟</span>' : '';
-                    sh += '<div class="top3-card" style="border-left:2px solid #c93;margin-bottom:10px">';
-                    sh += '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">';
-                    sh += '<div><div style="font-size:14px;font-weight:600;color:#eee">👑 ' + esc(ld.name || '') + ' <span style="font-size:11px;color:#888">(' + esc(ld.code || '') + ')</span>' + gradeBadge + '</div>';
-                    sh += '<div style="font-size:12px;color:#aaa;margin-top:4px">테마: <b style="color:#c93">' + esc(g.theme_name || '') + '</b> · 같은 테마 급등 ' + (g.theme_members_count || 0) + '종목</div>';
-                    if (g.theme_members_names && g.theme_members_names.length > 1) {
-                        sh += '<div style="font-size:11px;color:#666;margin-top:3px">동반: ' + g.theme_members_names.slice(1).map(esc).join(', ') + '</div>';
-                    }
-
-                    if (g.extra_themes && g.extra_themes.length > 0) {
-                        sh += '<div style="font-size:11px;color:#fbbf24;margin-bottom:6px">📌 추가 테마: ' + g.extra_themes.map(esc).join(' · ') + '</div>';
-                    }
-                    if (g.scalping) {
-                        const sc = g.scalping;
-                        const rrColor = sc.rr_ratio >= 1.5 ? '#22c55e' : (sc.rr_ratio >= 1 ? '#eab308' : '#ef4444');
-                        sh += '<div style="margin:8px 0;padding:10px;background:#0f172a;border:1px solid #334155;border-radius:6px;font-size:12px">';
-                        sh += '<div style="font-weight:600;color:#60a5fa;margin-bottom:6px">🎯 스캘핑 (' + esc(sc.basis) + ')</div>';
-                        sh += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">';
-                        sh += '<div>진입: <b style="color:#22c55e">' + sc.entry_low.toLocaleString() + '~' + sc.entry_high.toLocaleString() + '</b></div>';
-                        sh += '<div>손절: <b style="color:#ef4444">' + sc.stop.toLocaleString() + '</b></div>';
-                        sh += '<div>1차 목표: <b style="color:#fbbf24">' + sc.target1.toLocaleString() + '</b></div>';
-                        sh += '<div>2차 목표: <b style="color:#fbbf24">' + sc.target2.toLocaleString() + '</b></div>';
-                        sh += '<div style="grid-column:1/3">손익비: <b style="color:' + rrColor + '">' + sc.rr_ratio + ' : 1</b>' + (sc.rr_ratio < 1.5 ? ' ⚠️ 신중' : ' ✅') + '</div>';
-                        sh += '</div></div>';
-                    }
-                    sh += '</div>';
-                    sh += '<div style="text-align:right;font-size:11px;color:#888"><div style="font-size:18px;color:#fc6;font-weight:600">+' + (ld.cum_return_pct || 0) + '%</div>';
-                    sh += '<div>거래대금 ×' + (ld.volume_ratio || 0) + '</div>';
-                    sh += '<div>시총 ' + Math.round((ld.market_cap_eok || 0) / 100) / 10 + '천억</div>';
-                    sh += '<div style="color:#666">점수 ' + (ld.score || 0) + '</div></div>';
-                    sh += '</div></div>';
-                });
-                sh += '</div>';
-                html += sh;
-            } else if (surge && surge.message) {
-                html += '<div class="section" style="border-top:1px solid #2a2a2a;margin-top:24px;padding-top:20px"><div class="section-title">🔥 급등 테마 대장주</div><div style="color:#888;font-size:13px">' + esc(surge.message) + '</div></div>';
-            }
-        } catch (e) { console.error('surge render err', e); }
-
-        el.innerHTML = html;
+el.innerHTML = html;
 
         // Draw charts after DOM update
         setTimeout(() => {
