@@ -546,6 +546,190 @@ body {
   margin-left: 8px;
 }
 
+
+/* STGAY_SCGAYSTYLE_START - SCGAY 구조 + 트레이더 블루 */
+body {
+  background: radial-gradient(ellipse at 20% 10%, rgba(59,130,246,0.08), transparent 50%),
+              radial-gradient(ellipse at 80% 60%, rgba(34,211,238,0.06), transparent 50%),
+              #0a0f1e !important;
+  min-height: 100vh;
+  position: relative;
+}
+.stgay-wrap {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+}
+.stgay-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  margin-top: 8px;
+}
+.stgay-card {
+  background: linear-gradient(145deg, rgba(20,28,52,0.85), rgba(10,15,30,0.95));
+  border: 1px solid rgba(59,130,246,0.18);
+  border-radius: 16px;
+  padding: 24px 28px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03);
+  backdrop-filter: blur(14px);
+  transition: all 0.25s ease;
+}
+.stgay-card:hover {
+  border-color: rgba(34,211,238,0.32);
+  box-shadow: 0 12px 36px rgba(34,211,238,0.10), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.stgay-card-h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 6px;
+  flex-wrap: wrap;
+}
+.stgay-card-h h2 {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0;
+  color: #e2e8f0;
+  letter-spacing: 0.2px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.stgay-card-sub {
+  font-size: 12.5px;
+  color: #64748b;
+  margin: 0 0 16px;
+}
+.stgay-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 11px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  background: rgba(59,130,246,0.14);
+  color: #60a5fa;
+  border: 1px solid rgba(59,130,246,0.4);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+.stgay-pill.cyan {
+  background: rgba(34,211,238,0.14);
+  color: #67e8f9;
+  border-color: rgba(34,211,238,0.4);
+}
+.stgay-action {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+/* 분석 시작 버튼 SCGAY primary 스타일 + 블루 */
+#startBtn.btn-start {
+  background: linear-gradient(135deg, #3b82f6, #06b6d4) !important;
+  color: #fff !important;
+  border: none !important;
+  padding: 14px 36px !important;
+  border-radius: 12px !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.3px !important;
+  cursor: pointer !important;
+  box-shadow: 0 6px 20px rgba(59,130,246,0.45) !important;
+  transition: all 0.2s ease !important;
+  width: auto !important;
+  margin: 0 !important;
+}
+#startBtn.btn-start:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 10px 28px rgba(34,211,238,0.55) !important;
+}
+#startBtn.btn-start:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+/* start-section을 카드 안으로 보이게 */
+.start-section {
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  text-align: center !important;
+  box-shadow: none !important;
+}
+/* 진행바 톤 통일 */
+.progress-section {
+  margin-top: 16px !important;
+}
+.progress-bar-bg {
+  background: rgba(15,23,41,0.6) !important;
+  border: 1px solid rgba(59,130,246,0.15) !important;
+}
+.progress-fill {
+  background: linear-gradient(90deg, #3b82f6, #22d3ee) !important;
+}
+/* 아카이브 (기존 .stgay-arch-* 위에 색만 살짝 톤다운) */
+.stgay-arch-card { display: none !important; } /* 옛 카드 숨김, 새 카드로 대체 */
+.stgay-arch-list-v2 { display: grid; gap: 10px; }
+.stgay-arch-item-v2 {
+  background: rgba(15,23,41,0.55);
+  border: 1px solid rgba(59,130,246,0.12);
+  border-left: 3px solid #3b82f6;
+  border-radius: 10px;
+  padding: 14px 18px;
+  transition: all 0.18s ease;
+}
+.stgay-arch-item-v2:hover {
+  border-left-color: #22d3ee;
+  background: rgba(15,23,41,0.85);
+  transform: translateX(2px);
+}
+.stgay-arch-head-v2 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.stgay-arch-name-v2 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+.stgay-arch-code-v2 {
+  font-size: 12px;
+  color: #64748b;
+  margin-left: 8px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.stgay-arch-date-v2 {
+  font-size: 11.5px;
+  color: #93c5fd;
+  background: rgba(59,130,246,0.12);
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.stgay-arch-meta-v2 {
+  font-size: 12px;
+  color: #94a3b8;
+}
+.stgay-arch-empty-v2 {
+  text-align: center;
+  padding: 36px 20px;
+  color: #64748b;
+  font-size: 14px;
+}
+@media (max-width: 720px) {
+  .stgay-card { padding: 20px 18px; }
+  #startBtn.btn-start { padding: 12px 24px !important; font-size: 14px !important; }
+}
+/* STGAY_SCGAYSTYLE_END */
+
 </style>
 </head>
 <body>
@@ -560,11 +744,20 @@ body {
         </div>
     </div>
 
+    <div class="stgay-wrap"><div class="stgay-grid">
+  <div class="stgay-card" id="stgayAnalyzeCard">
+    <div class="stgay-card-h">
+      <h2>📊 단기 스윙 분석 <span class="stgay-pill">SWING</span></h2>
+      <span class="stgay-pill cyan">시총 1천~5천억 스위트 스팟</span>
+    </div>
+    <p class="stgay-card-sub">네이버 금융 + 인포스탁 테마 + 외인/기관 수급 + 차트 + 매물대 종합 분석</p>
     <div class="start-section">
         <button id="startBtn" class="btn-start" onclick="startAnalysis()">🔍 분석 시작</button>
 
     <div id="progressSection" class="progress-section">
         <div class="progress-bar-bg"><div id="progressFill" class="progress-fill"></div></div>
+  </div>
+
         <div id="progressPhase" class="progress-label"></div>
     </div>
 
@@ -1193,6 +1386,18 @@ el.innerHTML = html;
       </div>
     </div>
 
+    
+  <div class="stgay-card" id="stgayArchCardV2">
+    <div class="stgay-card-h">
+      <h2>📁 분석 아카이브 <span class="stgay-pill" id="stgayArchCountV2">0건</span></h2>
+    </div>
+    <p class="stgay-card-sub">최근 분석한 종목 기록 (최대 100건, 같은 날짜 중복 제거)</p>
+    <div class="stgay-arch-list-v2" id="stgayArchListV2">
+      <div class="stgay-arch-empty-v2">불러오는 중...</div>
+    </div>
+  </div>
+</div></div>
+
     {% include 'pdcsi_widget.html' %}
 
 <!-- STGAY_ARCHIVE_JS_START -->
@@ -1247,6 +1452,60 @@ el.innerHTML = html;
 })();
 </script>
 <!-- STGAY_ARCHIVE_JS_END -->
+
+
+<!-- STGAY_ARCHIVE_V2_START -->
+<script>
+(function(){
+  function escA(s){
+    s = String(s == null ? '' : s);
+    return s.replace(/[<>&"]/g, function(c){
+      return c === '<' ? '&lt;' : c === '>' ? '&gt;' : c === '&' ? '&amp;' : '&quot;';
+    });
+  }
+  function loadStgayArchiveV2(){
+    fetch('/stgay/api/archive').then(function(r){
+      if(!r.ok) throw new Error('fetch fail');
+      return r.json();
+    }).then(function(data){
+      var list = document.getElementById('stgayArchListV2');
+      var cnt = document.getElementById('stgayArchCountV2');
+      var items = data.items || [];
+      if(cnt) cnt.textContent = (data.total || 0) + '건';
+      if(!list) return;
+      if(items.length === 0){
+        list.innerHTML = '<div class="stgay-arch-empty-v2">아직 분석 기록이 없습니다.<br/>위에서 첫 분석을 시작하세요!</div>';
+        return;
+      }
+      var h = '';
+      for(var i=0; i<items.length; i++){
+        var it = items[i];
+        h += '<div class="stgay-arch-item-v2">';
+        h += '<div class="stgay-arch-head-v2"><div>';
+        h += '<span class="stgay-arch-name-v2">' + escA(it.name || '분석') + '</span>';
+        if(it.code) h += '<span class="stgay-arch-code-v2">' + escA(it.code) + '</span>';
+        h += '</div><span class="stgay-arch-date-v2">' + escA(it.date || '') + '</span></div>';
+        h += '<div class="stgay-arch-meta-v2">🕐 ' + escA(it.recorded_at || '');
+        if(it.theme_count) h += ' · 🏷 테마 ' + it.theme_count;
+        if(it.stock_count) h += ' · 📈 종목 ' + it.stock_count;
+        h += '</div></div>';
+      }
+      list.innerHTML = h;
+    }).catch(function(e){
+      console.error('[stgay] archive v2 err', e);
+      var list = document.getElementById('stgayArchListV2');
+      if(list) list.innerHTML = '<div class="stgay-arch-empty-v2">⚠️ 아카이브 불러오기 실패</div>';
+    });
+  }
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', loadStgayArchiveV2);
+  } else {
+    loadStgayArchiveV2();
+  }
+  window.refreshStgayArchiveV2 = loadStgayArchiveV2;
+})();
+</script>
+<!-- STGAY_ARCHIVE_V2_END -->
 
 </body>
 </html>
