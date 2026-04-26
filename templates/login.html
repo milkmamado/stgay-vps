@@ -5,80 +5,174 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>STGAY 입장</title>
     <style>
-/* ===== STGAY Login - Vercel Style ===== */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+/* ===== STGAY Login - Trader Blue (STGAY 메인과 통일) ===== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&display=swap');
+
+* { box-sizing: border-box; }
 
 body {
-    background: #000000;
-    color: #ededed;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: radial-gradient(ellipse at 20% 10%, rgba(59,130,246,0.10), transparent 55%),
+                radial-gradient(ellipse at 80% 70%, rgba(34,211,238,0.08), transparent 55%),
+                #0a0f1e;
+    color: #e2e8f0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
     margin: 0;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
 }
+body::before, body::after {
+    content: '';
+    position: absolute;
+    width: 360px;
+    height: 360px;
+    border-radius: 50%;
+    filter: blur(90px);
+    opacity: 0.35;
+    pointer-events: none;
+    animation: floatGlow 14s ease-in-out infinite;
+}
+body::before { background: #3b82f6; top: 8%; left: 4%; }
+body::after  { background: #22d3ee; top: 55%; right: 5%; animation-delay: 6s; }
+@keyframes floatGlow {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50%      { transform: translate(20px, -20px) scale(1.08); }
+}
+
 .login-box {
-    background: #0a0a0a;
-    padding: 48px 40px;
-    border-radius: 8px;
+    background: linear-gradient(145deg, rgba(20,28,52,0.85), rgba(10,15,30,0.95));
+    padding: 44px 36px 36px;
+    border-radius: 18px;
     text-align: center;
-    border: 1px solid #333;
-    box-shadow: 0 0 0 1px rgba(255,255,255,0.05);
+    border: 1px solid rgba(59,130,246,0.22);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.03), inset 0 1px 0 rgba(255,255,255,0.04);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
     min-width: 340px;
+    max-width: 380px;
+    width: 100%;
+    position: relative;
+    z-index: 2;
+    animation: cardIn 0.5s ease-out;
 }
+@keyframes cardIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.brand-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    background: rgba(59,130,246,0.15);
+    color: #60a5fa;
+    border: 1px solid rgba(59,130,246,0.4);
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 14px;
+}
+
 h1 {
-    font-size: 20px;
-    font-weight: 600;
-    margin-bottom: 28px;
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0 0 6px;
     letter-spacing: -0.4px;
-    color: #ededed;
+    background: linear-gradient(90deg, #e2e8f0, #93c5fd 60%, #67e8f9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
+.login-sub {
+    font-size: 12.5px;
+    color: #64748b;
+    margin: 0 0 26px;
+}
+
 input {
-    background: #000;
-    border: 1px solid #333;
-    color: #ededed;
-    padding: 10px 16px;
-    border-radius: 6px;
+    background: rgba(15,23,41,0.7);
+    border: 1px solid rgba(59,130,246,0.25);
+    color: #e2e8f0;
+    padding: 12px 16px;
+    border-radius: 10px;
     font-size: 14px;
     width: 100%;
     text-align: center;
     font-family: 'Inter', sans-serif;
-    transition: border-color 0.15s ease;
+    transition: all 0.18s ease;
     outline: none;
-    box-sizing: border-box;
+    letter-spacing: 1px;
 }
 input:focus {
-    border-color: #ededed;
+    border-color: #22d3ee;
+    box-shadow: 0 0 0 3px rgba(34,211,238,0.18);
+    background: rgba(15,23,41,0.95);
 }
 input::placeholder {
-    color: #666;
+    color: #475569;
+    letter-spacing: 0.5px;
 }
+
 button {
-    background: #ededed;
-    color: #000;
+    background: linear-gradient(135deg, #3b82f6, #06b6d4);
+    color: #fff;
     border: none;
-    padding: 10px 30px;
-    border-radius: 6px;
+    padding: 13px 30px;
+    border-radius: 10px;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 700;
     cursor: pointer;
-    margin-top: 16px;
+    margin-top: 18px;
     display: block;
     width: 100%;
     font-family: 'Inter', sans-serif;
-    transition: background 0.15s ease;
-    letter-spacing: -0.2px;
+    letter-spacing: 0.3px;
+    box-shadow: 0 6px 18px rgba(59,130,246,0.42);
+    transition: all 0.2s ease;
 }
 button:hover {
-    background: #ffffff;
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 10px 26px rgba(34,211,238,0.55);
 }
+button:active {
+    transform: translateY(0) scale(0.99);
+}
+
 .error {
-    color: #ff4f4f;
-    margin-top: 12px;
-    font-size: 13px;
+    color: #fca5a5;
+    background: rgba(239,68,68,0.10);
+    border: 1px solid rgba(239,68,68,0.35);
+    margin-top: 14px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 500;
 }
-    </style>
+
+.login-foot {
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid rgba(59,130,246,0.12);
+    font-size: 11px;
+    color: #475569;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.5px;
+}
+.login-foot b { color: #60a5fa; font-weight: 700; }
+
+@media (max-width: 420px) {
+    .login-box { padding: 32px 22px; min-width: 0; }
+    h1 { font-size: 19px; }
+}
+</style>
 </head>
 <body>
     <div class="login-box">
