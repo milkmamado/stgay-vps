@@ -464,6 +464,88 @@ body {
 .calc-summary .sum-value { font-size: 16px; font-weight: 600; margin-top: 4px; }
 /* === /scgay-split === */
 
+
+/* STGAY 트레이더 블루 - 아카이브 카드 */
+.stgay-arch-card {
+  max-width: 980px;
+  margin: 28px auto;
+  background: linear-gradient(145deg, rgba(26,35,66,0.85), rgba(15,23,41,0.92));
+  border: 1px solid rgba(59,130,246,0.18);
+  border-radius: 18px;
+  padding: 28px 32px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+}
+.stgay-arch-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #93c5fd;
+  margin: 0 0 6px;
+}
+.stgay-arch-sub {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0 0 18px;
+}
+.stgay-arch-list {
+  display: grid;
+  gap: 10px;
+}
+.stgay-arch-item {
+  background: rgba(15,23,41,0.6);
+  border: 1px solid rgba(59,130,246,0.12);
+  border-left: 3px solid #3b82f6;
+  border-radius: 10px;
+  padding: 14px 18px;
+  transition: all 0.18s;
+}
+.stgay-arch-item:hover {
+  border-left-color: #22d3ee;
+  background: rgba(15,23,41,0.85);
+}
+.stgay-arch-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.stgay-arch-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+.stgay-arch-code {
+  font-size: 12px;
+  color: #64748b;
+  margin-left: 8px;
+}
+.stgay-arch-date {
+  font-size: 12px;
+  color: #93c5fd;
+  background: rgba(59,130,246,0.12);
+  padding: 3px 10px;
+  border-radius: 12px;
+}
+.stgay-arch-meta {
+  font-size: 12px;
+  color: #94a3b8;
+}
+.stgay-arch-empty {
+  text-align: center;
+  padding: 32px 20px;
+  color: #64748b;
+  font-size: 14px;
+}
+.stgay-arch-count {
+  font-size: 12px;
+  color: #22d3ee;
+  margin-left: 8px;
+}
+
 </style>
 </head>
 <body>
@@ -1010,7 +1092,64 @@ el.innerHTML = html;
         if (newsFlow.summary) h += '<div class="section"><div class="section-title">📰 뉴스 흐름</div><div class="extra-content">' + esc(newsFlow.summary) + '</div></div>';
 
         h += '<div class="footer"><p>⚠️ 본 분석은 AI 기반 참고 자료이며, 투자 결정은 본인의 판단에 따라 이루어져야 합니다.</p></div>';
-        h += '</div></body></html>';
+        h += '</div>
+<script>
+(function(){
+  function escHtml(s){
+    s = String(s == null ? '' : s);
+    return s.replace(/[<>&"]/g, function(c){
+      return c === '<' ? '&lt;' : c === '>' ? '&gt;' : c === '&' ? '&amp;' : '&quot;';
+    });
+  }
+  function loadStgayArchive(){
+    fetch('/stgay/api/archive').then(function(r){
+      if(!r.ok) throw new Error('fetch fail');
+      return r.json();
+    }).then(function(data){
+      var list = document.getElementById('stgayArchList');
+      var cnt = document.getElementById('stgayArchCount');
+      var items = data.items || [];
+      if(cnt) cnt.textContent = '· 총 ' + (data.total || 0) + '건';
+      if(!list) return;
+      if(items.length === 0){
+        list.innerHTML = '<div class="stgay-arch-empty">아직 분석 기록이 없습니다. 위에서 첫 분석을 시작하세요!</div>';
+        return;
+      }
+      var html = '';
+      for(var i=0; i<items.length; i++){
+        var it = items[i];
+        html += '<div class="stgay-arch-item">';
+        html +=   '<div class="stgay-arch-head">';
+        html +=     '<div>';
+        html +=       '<span class="stgay-arch-name">' + escHtml(it.name || '분석') + '</span>';
+        if(it.code) html += '<span class="stgay-arch-code">' + escHtml(it.code) + '</span>';
+        html +=     '</div>';
+        html +=     '<span class="stgay-arch-date">' + escHtml(it.date || '') + '</span>';
+        html +=   '</div>';
+        html +=   '<div class="stgay-arch-meta">';
+        html +=     '🕐 ' + escHtml(it.recorded_at || '');
+        if(it.theme_count) html += ' · 🏷 테마 ' + it.theme_count;
+        if(it.stock_count) html += ' · 📈 종목 ' + it.stock_count;
+        html +=   '</div>';
+        html += '</div>';
+      }
+      list.innerHTML = html;
+    }).catch(function(e){
+      console.error('[stgay] archive load err', e);
+      var list = document.getElementById('stgayArchList');
+      if(list) list.innerHTML = '<div class="stgay-arch-empty">⚠️ 아카이브 불러오기 실패</div>';
+    });
+  }
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', loadStgayArchive);
+  } else {
+    loadStgayArchive();
+  }
+  window.refreshStgayArchive = loadStgayArchive;
+})();
+</script>
+
+</body></html>';
 
         const blob = new Blob([h], { type: 'text/html;charset=utf-8' });
         const a = document.createElement('a');
@@ -1102,6 +1241,15 @@ el.innerHTML = html;
     }
 
 </script>
-{% include 'pdcsi_widget.html' %}
+
+    <div class="stgay-arch-card" id="stgayArchCard">
+      <h3 class="stgay-arch-title">📁 분석 아카이브 <span class="stgay-arch-count" id="stgayArchCount"></span></h3>
+      <p class="stgay-arch-sub">최근 분석한 종목 기록 (최대 100건, 같은 날짜 중복 제거)</p>
+      <div class="stgay-arch-list" id="stgayArchList">
+        <div class="stgay-arch-empty">불러오는 중...</div>
+      </div>
+    </div>
+
+    {% include 'pdcsi_widget.html' %}
 </body>
 </html>

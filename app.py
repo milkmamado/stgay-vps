@@ -74,6 +74,10 @@ def api_status():
 def api_result():
     with state_lock:
         if crawl_state['result']:
+            try:
+                _stgay_archive_save(crawl_state['result'])
+            except Exception as _e:
+                print('[stgay] archive save fail:', _e)
             return jsonify(crawl_state['result'])
         return jsonify({'error': '결과 없음'}), 404
 
@@ -645,6 +649,74 @@ def scgay_stalking_toggle():
         _stalk_os.close(_fd)
         return jsonify({'enabled': True, 'msg': '▶️ 스토킹 시작'})
 
+
+
+# === STGAY 아카이브 ===
+import os as _stgay_os2
+import json as _stgay_json2
+from datetime import datetime as _stgay_dt2
+
+STGAY_ARCHIVE_FILE = _stgay_os2.path.join(
+    _stgay_os2.path.dirname(_stgay_os2.path.abspath(__file__)),
+    'data', 'stgay_archive.json'
+)
+
+def _stgay_archive_load():
+    try:
+        if _stgay_os2.path.exists(STGAY_ARCHIVE_FILE):
+            with open(STGAY_ARCHIVE_FILE, 'r', encoding='utf-8') as f:
+                return _stgay_json2.load(f)
+    except Exception:
+        pass
+    return []
+
+def _stgay_archive_save(result):
+    if not result or not isinstance(result, dict):
+        return
+    archive = _stgay_archive_load()
+    now = _stgay_dt2.now()
+    today = now.strftime('%Y-%m-%d')
+    stocks = result.get('stocks') or result.get('candidate_stocks') or []
+    stock_name = ''
+    stock_code = ''
+    if stocks and isinstance(stocks, list) and len(stocks) > 0:
+        first = stocks[0]
+        if isinstance(first, dict):
+            stock_name = first.get('name', '')
+            stock_code = first.get('code', '')
+    if not stock_name:
+        stock_name = result.get('stock_name', '') or result.get('query', '') or '분석'
+    if not stock_code:
+        stock_code = result.get('stock_code', '') or ''
+    key = today + '_' + (stock_code or stock_name)
+    existing = {(a.get('date','') + '_' + (a.get('code') or a.get('name',''))) for a in archive}
+    if key in existing:
+        return
+    summary = result.get('summary') or result.get('verdict') or ''
+    if isinstance(summary, str) and len(summary) > 200:
+        summary = summary[:200] + '...'
+    archive.append({
+        'date': today,
+        'recorded_at': now.strftime('%Y-%m-%d %H:%M:%S'),
+        'name': stock_name,
+        'code': stock_code,
+        'summary': summary,
+        'theme_count': len(result.get('themes', []) or []),
+        'stock_count': len(stocks) if isinstance(stocks, list) else 0,
+    })
+    archive = archive[-200:]
+    try:
+        with open(STGAY_ARCHIVE_FILE, 'w', encoding='utf-8') as f:
+            _stgay_json2.dump(archive, f, ensure_ascii=False, indent=2)
+    except Exception as _e:
+        print('[stgay] archive write fail:', _e)
+
+@app.route('/stgay/api/archive')
+@login_required
+def stgay_api_archive():
+    archive = _stgay_archive_load()
+    archive.sort(key=lambda x: x.get('recorded_at', ''), reverse=True)
+    return jsonify({'items': archive[:100], 'total': len(archive)})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5003, debug=False)
