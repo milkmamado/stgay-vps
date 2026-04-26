@@ -1092,64 +1092,7 @@ el.innerHTML = html;
         if (newsFlow.summary) h += '<div class="section"><div class="section-title">📰 뉴스 흐름</div><div class="extra-content">' + esc(newsFlow.summary) + '</div></div>';
 
         h += '<div class="footer"><p>⚠️ 본 분석은 AI 기반 참고 자료이며, 투자 결정은 본인의 판단에 따라 이루어져야 합니다.</p></div>';
-        h += '</div>
-<script>
-(function(){
-  function escHtml(s){
-    s = String(s == null ? '' : s);
-    return s.replace(/[<>&"]/g, function(c){
-      return c === '<' ? '&lt;' : c === '>' ? '&gt;' : c === '&' ? '&amp;' : '&quot;';
-    });
-  }
-  function loadStgayArchive(){
-    fetch('/stgay/api/archive').then(function(r){
-      if(!r.ok) throw new Error('fetch fail');
-      return r.json();
-    }).then(function(data){
-      var list = document.getElementById('stgayArchList');
-      var cnt = document.getElementById('stgayArchCount');
-      var items = data.items || [];
-      if(cnt) cnt.textContent = '· 총 ' + (data.total || 0) + '건';
-      if(!list) return;
-      if(items.length === 0){
-        list.innerHTML = '<div class="stgay-arch-empty">아직 분석 기록이 없습니다. 위에서 첫 분석을 시작하세요!</div>';
-        return;
-      }
-      var html = '';
-      for(var i=0; i<items.length; i++){
-        var it = items[i];
-        html += '<div class="stgay-arch-item">';
-        html +=   '<div class="stgay-arch-head">';
-        html +=     '<div>';
-        html +=       '<span class="stgay-arch-name">' + escHtml(it.name || '분석') + '</span>';
-        if(it.code) html += '<span class="stgay-arch-code">' + escHtml(it.code) + '</span>';
-        html +=     '</div>';
-        html +=     '<span class="stgay-arch-date">' + escHtml(it.date || '') + '</span>';
-        html +=   '</div>';
-        html +=   '<div class="stgay-arch-meta">';
-        html +=     '🕐 ' + escHtml(it.recorded_at || '');
-        if(it.theme_count) html += ' · 🏷 테마 ' + it.theme_count;
-        if(it.stock_count) html += ' · 📈 종목 ' + it.stock_count;
-        html +=   '</div>';
-        html += '</div>';
-      }
-      list.innerHTML = html;
-    }).catch(function(e){
-      console.error('[stgay] archive load err', e);
-      var list = document.getElementById('stgayArchList');
-      if(list) list.innerHTML = '<div class="stgay-arch-empty">⚠️ 아카이브 불러오기 실패</div>';
-    });
-  }
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', loadStgayArchive);
-  } else {
-    loadStgayArchive();
-  }
-  window.refreshStgayArchive = loadStgayArchive;
-})();
-</script>
-
-</body></html>';
+        h += '</div></body></html>';
 
         const blob = new Blob([h], { type: 'text/html;charset=utf-8' });
         const a = document.createElement('a');
@@ -1251,5 +1194,59 @@ el.innerHTML = html;
     </div>
 
     {% include 'pdcsi_widget.html' %}
+
+<!-- STGAY_ARCHIVE_JS_START -->
+<script>
+(function(){
+  function escArch(s){
+    s = String(s == null ? '' : s);
+    return s.replace(/[<>&"]/g, function(c){
+      return c === '<' ? '&lt;' : c === '>' ? '&gt;' : c === '&' ? '&amp;' : '&quot;';
+    });
+  }
+  function loadStgayArchive(){
+    fetch('/stgay/api/archive').then(function(r){
+      if(!r.ok) throw new Error('fetch fail');
+      return r.json();
+    }).then(function(data){
+      var list = document.getElementById('stgayArchList');
+      var cnt = document.getElementById('stgayArchCount');
+      var items = data.items || [];
+      if(cnt) cnt.textContent = '· 총 ' + (data.total || 0) + '건';
+      if(!list) return;
+      if(items.length === 0){
+        list.innerHTML = '<div class="stgay-arch-empty">아직 분석 기록이 없습니다. 위에서 첫 분석을 시작하세요!</div>';
+        return;
+      }
+      var h = '';
+      for(var i=0; i<items.length; i++){
+        var it = items[i];
+        h += '<div class="stgay-arch-item">';
+        h += '<div class="stgay-arch-head"><div>';
+        h += '<span class="stgay-arch-name">' + escArch(it.name || '분석') + '</span>';
+        if(it.code) h += '<span class="stgay-arch-code">' + escArch(it.code) + '</span>';
+        h += '</div><span class="stgay-arch-date">' + escArch(it.date || '') + '</span></div>';
+        h += '<div class="stgay-arch-meta">🕐 ' + escArch(it.recorded_at || '');
+        if(it.theme_count) h += ' · 🏷 테마 ' + it.theme_count;
+        if(it.stock_count) h += ' · 📈 종목 ' + it.stock_count;
+        h += '</div></div>';
+      }
+      list.innerHTML = h;
+    }).catch(function(e){
+      console.error('[stgay] archive load err', e);
+      var list = document.getElementById('stgayArchList');
+      if(list) list.innerHTML = '<div class="stgay-arch-empty">⚠️ 아카이브 불러오기 실패</div>';
+    });
+  }
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', loadStgayArchive);
+  } else {
+    loadStgayArchive();
+  }
+  window.refreshStgayArchive = loadStgayArchive;
+})();
+</script>
+<!-- STGAY_ARCHIVE_JS_END -->
+
 </body>
 </html>
