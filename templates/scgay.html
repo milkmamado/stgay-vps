@@ -356,7 +356,7 @@
             <tbody>
               <tr data-s="0900" data-e="0930"><td class="t">09:00–09:30</td><td><span class="scs-zone-tag r">DANGER</span></td><td>시초 갭/매물 폭탄, VWAP 표본 부족 → 함정 90%</td></tr>
               <tr data-s="0930" data-e="1000"><td class="t">09:30–10:00</td><td><span class="scs-zone-tag y">CAUTION</span></td><td>거래량 1.5배 + VWAP 위 조건일 때만 진입</td></tr>
-              <tr data-s="1000" data-e="1130"><td class="t">10:00–11:30</td><td><span class="scs-zone-tag g">GOLDEN</span></td><td>🍆 육봉 크로스체킹 황금 타임 — VWAP 신뢰도 최고</td></tr>
+              <tr data-s="1000" data-e="1130"><td class="t">10:00–11:30</td><td><span class="scs-zone-tag g">GOLDEN</span></td><td>🍆 육봉체킹 황금 타임 — VWAP 신뢰도 최고</td></tr>
               <tr data-s="1130" data-e="1330"><td class="t">11:30–13:30</td><td><span class="scs-zone-tag y">CAUTION</span></td><td>점심 거래량 급감, 신호 의미 약함</td></tr>
               <tr data-s="1330" data-e="1430"><td class="t">13:30–14:30</td><td><span class="scs-zone-tag g">GOLDEN</span></td><td>오후 추세 형성 + 재진입 매수세</td></tr>
               <tr data-s="1430" data-e="1500"><td class="t">14:30–15:00</td><td><span class="scs-zone-tag r">DANGER</span></td><td>종가 베팅 변동성, 5분 만에 -3% 가능</td></tr>
@@ -372,7 +372,7 @@
   <div class="grid">
     <!-- 1) 분석 섹션 -->
     <div class="card full">
-      <h2>🍆 육봉 크로스체킹 가동 <span class="badge">+15% 솟음</span></h2>
+      <h2>🍆 육봉체킹 스타트 <span class="badge">+15% 슈팅</span></h2>
       <div class="row">
         <button class="primary" id="btn-scan">분석 시작</button>
         <span class="progress" id="status">대기 중</span>
@@ -388,8 +388,7 @@
         <input class="txt" id="vwap-code" maxlength="6" placeholder="종목코드 (006340)">
         <button class="primary" id="btn-vwap">조회</button>
       </div>
-      <div class="vwap-result" id="vwap-out"></div>
-      <div class="abcd-result" id="abcd-out-inline"></div>
+      <div id="verdict-box" style="margin-top:18px;"></div>
     </div>
 
     <!-- 2-3) 🍿 육봉 스토킹 -->
@@ -400,10 +399,10 @@
           <span id="stk-status-pill" class="stalking-status-pill stalking-status-off">⏹️ 크론 OFF</span>
           <span style="color:#64748b;font-size:11px;margin-left:8px">2분 주기 · 09:30~14:30</span>
         </div>
-        <button id="btn-stk-toggle" class="stalking-toggle-btn stalking-toggle-on">▶️ 스토킹 시작</button>
+        <button id="btn-stk-toggle" class="" style="background:#475569;color:#e2e8f0;border:1px solid #64748b;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;">▶️ 스토킹 시작</button>
       </div>
       <div class="row">
-        <input class="txt" id="stk-code" maxlength="6" placeholder="추적할 종목코드 (006340)">
+        <input class="txt" id="stk-code" maxlength="6" placeholder="종목코드 (006340)">
         <button class="primary" id="btn-stk-add">➕ 추가</button>
       </div>
       <div id="stk-list"><div class="stalking-empty">아직 추적 중인 종목이 없어요</div></div>
@@ -438,15 +437,35 @@ async function startScan() {
 }
 function pollStatus() {
   clearInterval(pollTimer);
+  // phase 단계 매핑 (서버 raw 메시지 → 깔끔한 라벨)
+  const PHASE_MAP = {
+    '뉴스 수집 중': { icon: '📰', label: '뉴스 수집', step: 1 },
+    '기사 본문 분석 중': { icon: '📄', label: '기사 본문 분석', step: 2 },
+    '테마 분석 중': { icon: '🏷️', label: '테마 분석', step: 3 },
+    '종목 정보 수집 중': { icon: '📊', label: '종목 정보 수집', step: 4 },
+    '급등 테마 스캔 중': { icon: '🚀', label: '급등 테마 스캔', step: 5 },
+    '스윙 3단계 분석 중': { icon: '🔍', label: '심층 분석', step: 6 },
+    'AI 분석 중': { icon: '🤖', label: 'AI 종합 분석', step: 7 },
+    '완료': { icon: '✅', label: '완료', step: 8 }
+  };
+  const TOTAL_STEPS = 8;
   pollTimer = setInterval(async () => {
     const r = await fetch('/scgay/api/status');
     const d = await r.json();
-    document.getElementById('status').textContent = `${d.phase || ''} · ${d.progress || ''}`;
-    document.getElementById('bar').style.width = (d.percent || 0) + '%';
+    const meta = PHASE_MAP[d.phase] || { icon: '⏳', label: d.phase || '대기', step: 0 };
+    const pct = d.percent || Math.round((meta.step / TOTAL_STEPS) * 100);
+    const el = document.getElementById('status');
+    el.innerHTML = `<span style="font-size:14px;">${meta.icon}</span> <strong>${meta.label}</strong> <span style="color:#64748b;font-size:12px;">(${meta.step}/${TOTAL_STEPS})</span>`;
+    document.getElementById('bar').style.width = pct + '%';
     if (!d.running) {
       clearInterval(pollTimer);
       document.getElementById('btn-scan').disabled = false;
-      if (d.has_result) loadResult();
+      if (d.has_result) {
+        el.innerHTML = '<span style="color:#10b981;">✅ 분석 완료</span>';
+        loadResult();
+      } else if (d.error) {
+        el.innerHTML = '<span style="color:#ef4444;">❌ 분석 실패</span>';
+      }
     }
   }, 2000);
 }
@@ -462,33 +481,32 @@ function renderLeaders(d) {
   const surge = (d || {}).surge_leaders || {};
   const leaders = surge.leaders || [];
   if (!leaders.length) {
-    el.innerHTML = '<div class="empty">대장주 없음 (조건 미충족)</div>';
+    el.innerHTML = '<div style="padding:24px;text-align:center;color:#94a3b8;background:rgba(15,23,42,.4);border-radius:12px;border:1px dashed #334155;">대장주 없음 (조건 미충족)</div>';
     return;
   }
   el.innerHTML = leaders.map(item => {
     const L = item.leader || {};
-    const s = item.scalping || {};
+    const sc = item.scalping || {};
+    const ret = (L.cum_return_pct || 0).toFixed(1);
+    const retColor = ret > 10 ? '#ef4444' : ret > 5 ? '#f59e0b' : '#10b981';
     return `
-      <div class="leader-card">
-        <span class="theme-tag">${item.theme_name || '-'} · ${item.theme_members_count || 0}종목</span>
-        <div class="leader-head">
+      <div style="background:linear-gradient(135deg,rgba(15,23,42,.8),rgba(30,41,59,.6));border:1px solid #334155;border-left:3px solid ${retColor};border-radius:12px;padding:14px;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
           <div>
-            <span class="leader-name">${L.name || '-'}</span>
-            <span class="leader-code">${L.code || ''}</span>
+            <div style="font-size:15px;font-weight:600;color:#f1f5f9;">${L.name || '-'} <span style="font-size:11px;color:#64748b;font-weight:400;">${L.code || ''}</span></div>
+            <div style="font-size:11px;color:#94a3b8;margin-top:2px;">현재가 <strong style="color:#e2e8f0;">${fmt(sc.current_price || L.price)}원</strong> · 시총 ${fmt(L.market_cap_eok)}억 · 거래량 x${(L.volume_ratio || 0).toFixed(1)}</div>
           </div>
-          <div class="pct-up">+${(L.cum_return_pct || 0).toFixed(1)}%</div>
+          <div style="font-size:18px;font-weight:700;color:${retColor};">+${ret}%</div>
         </div>
-        <div style="font-size:13px;color:#94a3b8">현재가 <b style="color:#f1f5f9">${fmt(s.current_price || L.price)}</b>원
-          · 시총 ${fmt(L.market_cap_eok)}억 · 거래량 x${(L.volume_ratio || 0).toFixed(1)}</div>
-        <div class="scalp">
-          <div><div class="lbl">진입↓</div><div class="val">${fmt(s.entry_low)}</div></div>
-          <div><div class="lbl">진입↑</div><div class="val">${fmt(s.entry_high)}</div></div>
-          <div><div class="lbl">목표1</div><div class="val">${fmt(s.target1)}</div></div>
-          <div><div class="lbl">손절</div><div class="val" style="color:#fb7185">${fmt(s.stop)}</div></div>
-          <div><div class="lbl">RR</div><div class="val">${s.rr_ratio || '-'}</div></div>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;background:rgba(0,0,0,.25);padding:8px;border-radius:8px;">
+          ${[['진입↓',sc.entry_low],['진입↑',sc.entry_high],['목표1',sc.target1],['손절',sc.stop],['RR',sc.rr_ratio||'-']].map(([k,v])=>`
+            <div style="text-align:center;">
+              <div style="font-size:9px;color:#64748b;margin-bottom:2px;">${k}</div>
+              <div style="font-size:12px;font-weight:600;color:#e2e8f0;">${typeof v === 'number' ? fmt(v) : v}</div>
+            </div>`).join('')}
         </div>
-        ${s.basis ? `<div style="margin-top:8px"><span class="basis-badge">${s.basis}</span></div>` : ''}
-        ${item.warning ? `<div class="warning">⚠️ ${item.warning}</div>` : ''}
+        ${sc.basis ? `<div style="margin-top:8px;font-size:10px;color:#64748b;">${sc.basis}</div>` : ''}
+        ${item.warning ? `<div style="margin-top:6px;font-size:10px;color:#f59e0b;">⚠️ ${item.warning}</div>` : ''}
       </div>`;
   }).join('');
 }
@@ -496,7 +514,7 @@ function renderLeaders(d) {
 // === VWAP ===
 async function checkVwap() {
   const code = document.getElementById('vwap-code').value.trim();
-  const out = document.getElementById('vwap-out');
+  const out = document.getElementById('vwap-out') || {classList:{add:()=>{},remove:()=>{}}, style:{}, set className(v){}, set innerHTML(v){}};
   out.classList.add('active');
   out.innerHTML = '<div style="color:#94a3b8;font-size:13px">조회 중...</div>';
   try {
@@ -521,6 +539,7 @@ async function checkVwap() {
         <div>📏 이격 <b style="color:${Math.abs(d.disparity_pct||0) > 2 ? '#fb923c' : '#34d399'}">${(d.disparity_pct >= 0 ? '+' : '') + (d.disparity_pct || 0)}%</b></div>
       </div>
       <div style="margin-top:8px;font-size:12px;color:#94a3b8">RR ${d.rr_ratio} · 1분봉 ${d.candle_count}개 · ${d.basis}</div>`;
+    window._lastVwap = d; renderVerdict();
   } catch (e) {
     out.innerHTML = `<div style="color:#fb7185;font-size:13px">❌ ${e.message}</div>`;
   }
@@ -634,25 +653,32 @@ async function loadArchive() {
   document.getElementById('arc-count').textContent = (d.total || 0) + '건';
   const el = document.getElementById('archive');
   if (!d.items || !d.items.length) {
-    el.innerHTML = '<div class="empty">아직 아카이빙된 추천이 없어요</div>';
+    el.innerHTML = '<div style="padding:18px;text-align:center;color:#94a3b8;font-size:12px;">아직 아카이빙된 추천이 없어요</div>';
     return;
   }
-  el.innerHTML = `<table>
-    <thead><tr><th>날짜</th><th>종목</th><th>테마</th><th>진입↑</th><th>손절</th><th>RR</th></tr></thead>
-    <tbody>${d.items.map(it => `
-      <tr>
-        <td style="color:#94a3b8;font-size:11px">${(it.date || '').slice(5)}</td>
-        <td><b>${it.name}</b><br><span style="color:#64748b;font-size:10px">${it.code}</span></td>
-        <td style="font-size:11px;color:#fbbf24">${it.theme_name || '-'}</td>
-        <td>${fmt(it.entry_high)}</td>
-        <td style="color:#fb7185">${fmt(it.stop)}</td>
-        <td>${it.rr_ratio || '-'}</td>
-      </tr>`).join('')}</tbody></table>`;
+  el.innerHTML = d.items.map(it => `
+    <div style="display:grid;grid-template-columns:60px 1fr auto;gap:10px;align-items:center;padding:10px 12px;background:rgba(15,23,42,.5);border:1px solid #1e293b;border-radius:8px;margin-bottom:6px;">
+      <div style="font-size:10px;color:#64748b;">${(it.date || '').slice(5)}</div>
+      <div>
+        <div style="font-size:13px;font-weight:600;color:#e2e8f0;">${it.name} <span style="font-size:10px;color:#64748b;font-weight:400;">${it.code}</span></div>
+        <div style="font-size:10px;color:#94a3b8;margin-top:2px;">${it.theme_name || '-'} · 진입↑ ${fmt(it.entry_high)} · 손절 ${fmt(it.stop)}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:9px;color:#64748b;">RR</div>
+        <div style="font-size:13px;font-weight:600;color:#10b981;">${it.rr_ratio || '-'}</div>
+      </div>
+    </div>`).join('');
 }
 
 document.getElementById('btn-scan').onclick = startScan;
 const _btnR = document.getElementById('btn-result'); if(_btnR) _btnR.onclick = loadResult;
-document.getElementById('btn-vwap').onclick = async () => { await checkVwap(); checkAbcd(document.getElementById('vwap-code').value); };
+document.getElementById('btn-vwap').onclick = async () => {
+  var btn = document.getElementById('btn-vwap');
+  var orig = btn.textContent;
+  btn.disabled = true; btn.textContent = '조회중...'; btn.style.opacity = '0.6';
+  try { await checkVwap(); await checkAbcd(document.getElementById('vwap-code').value); }
+  finally { btn.disabled = false; btn.textContent = orig; btn.style.opacity = '1'; }
+};
 document.getElementById('vwap-code').addEventListener('keydown', e => { if (e.key === 'Enter') { checkVwap().then(()=>checkAbcd(document.getElementById('vwap-code').value)); } });
 
 // === ABCD 패턴 ===
@@ -669,7 +695,7 @@ function abcdStarsRender(n) {
 }
 async function checkAbcd(codeArg) {
   const code = (codeArg || document.getElementById('vwap-code').value).trim();
-  const out = document.getElementById('abcd-out-inline');
+  const out = document.getElementById('abcd-out-inline') || {classList:{add:()=>{},remove:()=>{}}, style:{}, set className(v){}, set innerHTML(v){}};
   if (!/^\d{6}$/.test(code)) { if(!codeArg) alert('6자리 종목코드 입력'); return; }
   out.className = 'abcd-result active';
   out.innerHTML = '<div style="color:#888">조회 중...</div>';
@@ -704,10 +730,133 @@ async function checkAbcd(codeArg) {
       <div class="abcd-reason">📌 ${d.reason || '-'}</div>
       <div style="margin-top:8px;font-size:11px;color:#666;text-align:right">${d.updated_at || ''}</div>
     `;
+    window._lastAbcd = d; renderVerdict();
   } catch (e) {
     out.innerHTML = '<div style="color:#ef4444">❌ ' + (e.message || '오류') + '</div>';
+      window._lastAbcd = null; renderVerdict();
   }
 }
+
+// === 종합 진입 판정 (단일 통합 카드) ===
+function renderVerdict() {
+  var box = document.getElementById('verdict-box');
+  if (!box) return;
+  var v = window._lastVwap, a = window._lastAbcd;
+  if (!v && !a) { box.innerHTML = ''; return; }
+
+  // raw json 디버그용
+  var raw = document.getElementById('raw-json');
+  if (raw) if(raw)raw.textContent = JSON.stringify({vwap:v, abcd:a}, null, 2);
+
+  // === 신호 4개 ===
+  var signals = [];
+  var phaseOk = a && ['C','D','C+','B→C 형성중'].indexOf(a.phase) >= 0;
+  signals.push({label:'Phase ' + (a && a.phase || '?'), ok:phaseOk, weight:1.5});
+  var cvdOk = a && a.cvd_signal === 'BULLISH' && !a.cvd_divergence;
+  var cvdLabel = (a && a.cvd_divergence) ? 'CVD 다이버전스' : ('CVD ' + (a && a.cvd_signal || '?'));
+  signals.push({label:cvdLabel, ok:cvdOk, weight:1.5});
+  var volRatio = parseFloat(v && v.volume_ratio || 0);
+  signals.push({label:'거래량 x' + volRatio.toFixed(2), ok:volRatio>=1.0, weight:1});
+  var rr = parseFloat(v && v.rr_ratio || 0);
+  signals.push({label:'RR ' + rr.toFixed(2), ok:rr>=1.5, weight:1});
+
+  var score = 0, maxScore = 0;
+  signals.forEach(function(x){ maxScore += x.weight; if(x.ok) score += x.weight; });
+  var pct = Math.round(score/maxScore*100);
+
+  var verdict, color, emoji;
+  if (score >= 4.5) { verdict='진입 권장'; color='#16a34a'; emoji='🟢'; }
+  else if (score >= 3) { verdict='관 망'; color='#eab308'; emoji='🟡'; }
+  else if (score >= 1.5) { verdict='진입 보류'; color='#f97316'; emoji='🟠'; }
+  else { verdict='회 피'; color='#dc2626'; emoji='🔴'; }
+
+  // === 장 상태 배지 ===
+  var now = new Date();
+  var hh = now.getHours(), mm = now.getMinutes();
+  var minutes = hh*60 + mm;
+  var dow = now.getDay();
+  var marketStatus, marketColor;
+  if (dow === 0 || dow === 6) { marketStatus='🔴 휴장'; marketColor='#64748b'; }
+  else if (minutes < 9*60) { marketStatus='⚪ 개장 전'; marketColor='#64748b'; }
+  else if (minutes >= 9*60 && minutes < 15*60+30) { marketStatus='🟢 장중'; marketColor='#22c55e'; }
+  else { marketStatus='🔴 장마감'; marketColor='#94a3b8'; }
+
+  var name = (a && a.name) || (v && v.name) || (v && v.code) || '';
+  var code = (a && a.code) || (v && v.code) || '';
+  var price = (v && v.current_price) ? Number(v.current_price).toLocaleString() : '-';
+  var updated = (v && v.updated_at) || (a && a.updated_at) || '';
+  var surgePct = (a && a.surge_from_open_pct) ? a.surge_from_open_pct.toFixed(1) : null;
+
+  // === 신호 배지 HTML ===
+  var sigHtml = signals.map(function(s){
+    var bg = s.ok ? 'rgba(34,197,94,.10)' : 'rgba(239,68,68,.08)';
+    var fg = s.ok ? '#22c55e' : '#ef4444';
+    var bd = s.ok ? 'rgba(34,197,94,.25)' : 'rgba(239,68,68,.20)';
+    var icon = s.ok ? '✅' : '❌';
+    return '<div style="padding:8px 10px;border-radius:8px;background:' + bg + ';border:1px solid ' + bd + ';color:' + fg + ';font-size:12px;font-weight:600;text-align:center;">' + icon + ' ' + s.label + '</div>';
+  }).join('');
+
+  // === 트레이딩 플랜 ===
+  var planHtml = '';
+  if (v && v.entry_high) {
+    var entryRange = v.entry_low ? (Number(v.entry_low).toLocaleString() + '~' + Number(v.entry_high).toLocaleString()) : Number(v.entry_high).toLocaleString();
+    planHtml =
+      '<div style="margin-top:14px;padding:12px;background:rgba(15,23,42,.5);border-radius:8px;border:1px solid rgba(148,163,184,.1);">' +
+      '<div style="color:#94a3b8;font-size:10px;margin-bottom:8px;font-weight:600;letter-spacing:0.5px;">💰 트레이딩 플랜</div>' +
+      '<div style="display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:8px;text-align:center;font-size:12px;">' +
+        '<div><div style="color:#94a3b8;font-size:10px;margin-bottom:3px;">진입</div><b style="color:#60a5fa;font-size:13px;">' + entryRange + '</b></div>' +
+        '<div><div style="color:#94a3b8;font-size:10px;margin-bottom:3px;">손절</div><b style="color:#f87171;font-size:13px;">' + Number(v.stop).toLocaleString() + '</b></div>' +
+        '<div><div style="color:#94a3b8;font-size:10px;margin-bottom:3px;">목표</div><b style="color:#34d399;font-size:13px;">' + Number(v.target1).toLocaleString() + '</b></div>' +
+      '</div></div>';
+  }
+
+  // === ABCD 패턴 ===
+  var patternHtml = '';
+  if (a && a.a) {
+    var dTarget = a.d_target_min ? (Number(a.d_target_min).toLocaleString() + '~' + Number(a.d_target_max).toLocaleString()) : '-';
+    patternHtml =
+      '<div style="margin-top:10px;padding:12px;background:rgba(15,23,42,.5);border-radius:8px;border:1px solid rgba(148,163,184,.1);">' +
+      '<div style="color:#94a3b8;font-size:10px;margin-bottom:8px;font-weight:600;letter-spacing:0.5px;">📊 ABCD 패턴 (B 후 ' + (a.bars_after_b||0) + '봉)</div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#cbd5e1;flex-wrap:wrap;gap:4px;">' +
+        '<span><span style="color:#64748b;">A</span> <b>' + Number(a.a).toLocaleString() + '</b></span>' +
+        '<span style="color:#475569;">→</span>' +
+        '<span><span style="color:#64748b;">B</span> <b style="color:#fbbf24;">' + Number(a.b).toLocaleString() + '</b></span>' +
+        '<span style="color:#475569;">→</span>' +
+        '<span><span style="color:#64748b;">C</span> <b style="color:#60a5fa;">' + Number(a.c_low).toLocaleString() + '</b></span>' +
+        '<span style="color:#475569;">→</span>' +
+        '<span><span style="color:#64748b;">D</span> <b style="color:#34d399;">' + dTarget + '</b></span>' +
+      '</div>' +
+      (a.reason ? '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed rgba(148,163,184,.15);color:#94a3b8;font-size:11px;">📌 ' + a.reason + '</div>' : '') +
+      '</div>';
+  }
+
+  // === 헤더 (이름 + 가격 + 장상태) ===
+  var headerHtml =
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;gap:8px;flex-wrap:wrap;">' +
+      '<div>' +
+        '<div style="font-size:15px;font-weight:700;color:#e2e8f0;">' + name + ' <span style="color:#64748b;font-size:11px;font-weight:400;margin-left:4px;">' + code + '</span></div>' +
+        '<div style="margin-top:3px;color:#94a3b8;font-size:10px;">' + updated + '</div>' +
+      '</div>' +
+      '<div style="text-align:right;">' +
+        '<div style="font-size:18px;font-weight:800;color:#e2e8f0;">' + price + '<span style="font-size:10px;color:#94a3b8;font-weight:400;">원</span></div>' +
+        (surgePct ? '<div style="font-size:11px;color:#fbbf24;font-weight:600;">A→B +' + surgePct + '%</div>' : '') +
+        '<div style="font-size:9px;color:' + marketColor + ';font-weight:600;margin-top:2px;">' + marketStatus + '</div>' +
+      '</div>' +
+    '</div>';
+
+  box.innerHTML =
+    '<div style="border:1.5px solid ' + color + ';border-radius:12px;padding:16px;background:linear-gradient(135deg,rgba(15,23,42,.95),rgba(30,41,59,.95));box-shadow:0 0 24px ' + color + '22;">' +
+      headerHtml +
+      '<div style="text-align:center;padding:12px 0;border-top:1px solid rgba(148,163,184,.1);border-bottom:1px solid rgba(148,163,184,.1);">' +
+        '<div style="font-size:24px;font-weight:800;color:' + color + ';letter-spacing:2px;">' + emoji + ' ' + verdict + '</div>' +
+        '<div style="margin-top:4px;color:#94a3b8;font-size:11px;">신뢰도 ' + pct + '% · ' + score.toFixed(1) + '/' + maxScore.toFixed(1) + '</div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px;">' + sigHtml + '</div>' +
+      planHtml +
+      patternHtml +
+    '</div>';
+}
+
 
 
 // 초기 로드
@@ -777,85 +926,10 @@ fetch('/scgay/api/status').then(r => r.json()).then(d => {
 
 
 <!-- 🍆 SCGAY 팀원 가이드 모달 -->
-<button class="scgay-help-btn" onclick="document.getElementById('scgay-help-modal').classList.add('active')">📖 사용 가이드</button>
+
 
 <div class="scgay-help-overlay" id="scgay-help-modal" onclick="if(event.target===this)this.classList.remove('active')">
-  <div class="scgay-help-modal">
-    <button class="scgay-help-close" onclick="document.getElementById('scgay-help-modal').classList.remove('active')">×</button>
-    <h2>🍆 SCGAY 사용 가이드</h2>
-    <p style="color:#94a3b8;font-size:13px;">스캘핑 대장주 발굴 + 육봉(ABCD) 자동 추적 시스템</p>
-
-    <div class="scgay-help-tldr">
-      💡 <b>한 줄 요약</b>: <span class="scgay-zone-golden">10:00–11:30</span>이 황금 시간대.
-      그 외 시간 신호는 의심하고 보수적으로! VWAP 30분 롤링 기반이라 시초/종가는 표본이 흔들립니다.
-    </div>
-
-    <h3>⏰ 시간대별 매매 가이드</h3>
-    <table>
-      <tr><th>시간대</th><th>구간</th><th>핵심 포인트</th></tr>
-      <tr><td>09:00–09:30</td><td><span class="scgay-zone-danger">🔴 DANGER</span></td><td>시초 갭/매물 폭탄, VWAP 표본 부족 → <b>함정 90%</b></td></tr>
-      <tr><td>09:30–10:00</td><td><span class="scgay-zone-caution">🟡 CAUTION</span></td><td>거래량 1.5배 + VWAP 위 조건일 때만 진입</td></tr>
-      <tr><td>10:00–11:30</td><td><span class="scgay-zone-golden">🟢 GOLDEN</span></td><td>🍆 육봉 크로스체킹 <b>황금 타임</b> — VWAP 신뢰도 최고</td></tr>
-      <tr><td>11:30–13:30</td><td><span class="scgay-zone-caution">🟡 CAUTION</span></td><td>점심 거래량 급감, 신호 의미 약함</td></tr>
-      <tr><td>13:30–14:30</td><td><span class="scgay-zone-golden">🟢 GOLDEN</span></td><td>오후 추세 형성 + 재진입 매수세</td></tr>
-      <tr><td>14:30–15:00</td><td><span class="scgay-zone-danger">🔴 DANGER</span></td><td>종가 베팅 변동성, 5분 만에 -3% 가능</td></tr>
-      <tr><td>15:00–15:20</td><td><span class="scgay-zone-danger">🔴 DANGER</span></td><td>동시호가 — 매도 못 함, <b>절대 금지</b></td></tr>
-    </table>
-
-    <h3>🍆 육봉(ABCD) 패턴이란?</h3>
-    <p><b>"바닥(A)에서 솟구쳐(B), 잠깐 쉬다가(C), 더 솟으면(D) → 매수!"</b></p>
-    <ul>
-      <li><b>🅰️ A (바닥)</b> = <code>min(시가, 직전 30분 저점)</code> — 진짜 출발선</li>
-      <li><b>🅱️ B (1차 솟음)</b> = A 대비 <b>+5% 이상</b> 상승 → 대장주 자격</li>
-      <li><b>🅲️ C (보합)</b> = B 후 <b>3봉 연속</b>, 변동폭 ≤ 30% → 📲 <b>알림 발송!</b></li>
-      <li><b>🅳️ D (돌파)</b> = C 깨고 B보다 더 높이 → 📲 <b>매수 신호!</b></li>
-    </ul>
-
-    <h3>⭐ 신뢰도 별점 (B 도달 시각 기준)</h3>
-    <table>
-      <tr><th>별점</th><th>B 도달</th><th>의미</th></tr>
-      <tr><td>⭐⭐⭐</td><td>09:30 이내</td><td>장 시작과 동시 솟음 = 진짜 대장주</td></tr>
-      <tr><td>⭐⭐</td><td>~10:30</td><td>좋음 (오전 강세)</td></tr>
-      <tr><td>⭐</td><td>그 이후</td><td>보통 (오후 진입은 위험)</td></tr>
-    </table>
-
-    <h3>📋 사용 절차 (팀원용)</h3>
-    <ol>
-      <li><b>대장주 후보 추리기</b>: 메인에서 <code>🍆 육봉 크로스체킹 가동</code> + <code>15% 솟음 분석</code> 클릭</li>
-      <li><b>키움 관심종목 등록</b>: 추린 후보를 키움 HTS/MTS에 추가 (수동)</li>
-      <li><b>단일 종목 ABCD 체크</b>: 종목코드 입력 → 현재 phase 확인</li>
-      <li><b>스토킹 등록</b>: <code>➕</code>으로 추적 리스트 추가</li>
-      <li><b>크론 가동</b>: <code>▶️ 스토킹 시작</code> 클릭 (토글 ON)</li>
-      <li><b>알림 대기</b>: 09:30~14:30 동안 2분마다 자동 체크 → C/C+/D 확정시 텔레그램 알림 📲</li>
-      <li><b>매수 결정</b>: 알림 받으면 <span class="scgay-zone-golden">시간대 + 별점</span> 종합 판단 후 키움에서 매수</li>
-    </ol>
-
-    <h3>🚨 알림 정책</h3>
-    <ul>
-      <li>✅ <b>C / C+ / D 확정시 자동 알림</b> (중복 방지)</li>
-      <li>❌ <b>손절 알림 없음</b> — 본인 판단 (자동화 위험)</li>
-      <li>🗑️ <b>추적 만료 없음</b> — 휴지통 버튼으로 수동 삭제</li>
-      <li>⏰ <b>09:30 이전</b> = "데이터 수집 중" (봉 데이터 쌓이기 전)</li>
-    </ul>
-
-    <h3>💡 팀원이 자주 묻는 것</h3>
-    <h4>Q. 알림 안 와요</h4>
-    <ul>
-      <li>① <code>▶️ 스토킹 시작</code> 토글 ON 됐나?</li>
-      <li>② 평일 09:30~14:30인가? (장외엔 안 옴)</li>
-      <li>③ 추적 리스트에 종목 들어있나?</li>
-    </ul>
-    <h4>Q. 알림 왔는데 사야 돼요?</h4>
-    <ul>
-      <li>① 시간대 확인 — <span class="scgay-zone-golden">GOLDEN</span>이면 ✅, <span class="scgay-zone-danger">DANGER</span>면 ❌</li>
-      <li>② 별점 확인 — ⭐⭐⭐ 우선</li>
-      <li>③ <b>D 확정</b>이 진짜 매수 신호 (C는 진입 준비)</li>
-    </ul>
-
-    <p style="margin-top:24px;color:#64748b;font-size:12px;text-align:center;">
-      🐦 PigeonAI · SCGAY v1.0 · 문의: 손부장님
-    </p>
-  </div>
+  
 </div>
 
 </body>
