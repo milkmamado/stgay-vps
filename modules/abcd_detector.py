@@ -45,11 +45,19 @@ def detect_abcd_phase(
         'bars_after_b': 0,
         'c_plus_signal': False,
         'c_plus_reason': None,
+        # === Phase 1: CVD 근사치 ===
+        'cvd': 0,
+        'cvd_signal': 'NEUTRAL',
+        'cvd_divergence': False,
+        'cvd_reason': '',
     }
 
     if not candles_5min or len(candles_5min) < 1:
         result_skeleton['reason'] = '5분봉 데이터 없음'
         return result_skeleton
+
+    # CVD 계산 (모든 phase에서 활용)
+    _enrich_with_cvd(result_skeleton, candles_5min)
 
     is_partial = len(candles_5min) < 6
     result_skeleton['partial'] = is_partial
@@ -249,3 +257,53 @@ if __name__ == '__main__':
     res = detect_abcd_phase(sample_fake, day_open=8800)
     for k, v in res.items():
         print(f'  {k}: {v}')
+
+
+# ============= Phase 1: CVD (Cumulative Volume Delta) 근사치 =============
+def _calc_cvd_proxy(candles):
+    cvd = 0
+    for c in candles:
+        o = c.get('open', 0); cl = c.get('close', 0); v = c.get('volume', 0)
+        if cl > o: cvd += v
+        elif cl < o: cvd -= v
+    return int(cvd)
+
+
+def _classify_cvd_signal(candles):
+    cvd = _calc_cvd_proxy(candles)
+    total_vol = sum(c.get('volume', 0) for c in candles) or 1
+    ratio = cvd / total_vol
+    if ratio >= 0.15: return {'signal': 'BULLISH', 'cvd': cvd, 'ratio': ratio}
+    elif ratio <= -0.15: return {'signal': 'BEARISH', 'cvd': cvd, 'ratio': ratio}
+    return {'signal': 'NEUTRAL', 'cvd': cvd, 'ratio': ratio}
+
+
+def _detect_cvd_divergence(candles):
+    if len(candles) < 6:
+        return {'has_divergence': False, 'reason': '데이터 부족'}
+    half = len(candles) // 2
+    first_half = candles[:half]; second_half = candles[half:]
+    first_high = max(c.get('high', 0) for c in first_half)
+    second_high = max(c.get('high', 0) for c in second_half)
+    if second_high <= first_high:
+        return {'has_divergence': False, 'reason': '가격 신고가 미갱신'}
+    first_cvd = _calc_cvd_proxy(first_half); second_cvd = _calc_cvd_proxy(second_half)
+    if second_cvd < 0:
+        return {'has_divergence': True, 'reason': f'가격 신고가({first_high:.0f}->{second_high:.0f}) but 후반 CVD 음수({second_cvd:,})'}
+    if first_cvd > 0 and second_cvd < first_cvd * 0.3:
+        return {'has_divergence': True, 'reason': f'가격 신고가 갱신 but CVD 약화({first_cvd:,}->{second_cvd:,})'}
+    return {'has_divergence': False, 'reason': 'CVD 정렬 정상'}
+
+
+def _enrich_with_cvd(result, candles):
+    sig = _classify_cvd_signal(candles); div = _detect_cvd_divergence(candles)
+    result['cvd'] = sig['cvd']
+    result['cvd_signal'] = sig['signal']
+    result['cvd_divergence'] = div['has_divergence']
+    if div['has_divergence']:
+        result['cvd_reason'] = "⚠️ " + div['reason']
+    else:
+        ratio_pct = sig['ratio'] * 100
+        label = {'BULLISH': '🟢 매수우위', 'BEARISH': '🔴 매도우위', 'NEUTRAL': '🟡 중립'}[sig['signal']]
+        result['cvd_reason'] = f"{label} ({ratio_pct:+.1f}%)"
+

@@ -110,6 +110,17 @@ def main():
 
             # 알림 대상 phase 도달 + 아직 알림 안 보낸 경우
             if phase in ALERT_PHASES and it.get('last_alerted_phase') != phase:
+                # === Phase 1: CVD 게이트 (함정 알림 차단) ===
+                cvd_signal = r.get('cvd_signal', 'NEUTRAL')
+                cvd_divergence = r.get('cvd_divergence', False)
+                cvd_reason = r.get('cvd_reason', '')
+                cvd = r.get('cvd', 0)
+                if cvd_divergence:
+                    log(f"🚫 알림 차단 (다이버전스): {name} ({code}) {phase} — {cvd_reason}")
+                    continue
+                if cvd_signal == 'BEARISH' and phase in ('C', 'C+', 'D'):
+                    log(f"🚫 알림 차단 (CVD 매도우위): {name} ({code}) {phase} — {cvd_reason}")
+                    continue
                 stars = '⭐' * r.get('reliability_stars', 1)
                 surge = r.get('surge_from_open_pct', 0)
                 msg = (
@@ -117,6 +128,7 @@ def main():
                     f"{stars}\n"
                     f"시가 대비: <b>+{surge:.1f}%</b>\n"
                     f"사유: {r.get('reason', '')[:100]}\n"
+                    f"📊 CVD: {cvd:+,} ({cvd_reason})\n"
                     f"⏰ {datetime.now().strftime('%H:%M:%S')}"
                 )
                 if send_telegram(msg):
