@@ -2,7 +2,7 @@
 급등 테마 대장주 스캐너 v1.0
 =================================
 1~2일 누적 +15% 급등주 → 인포스탁 테마 그룹핑 → 같은 테마 3종목+ 모이면
-대장주 1위만 추천 출력. 추격매수 위험 가드 필수.
+대장주 추천 출력.
 
 파이프라인:
   1) pykrx로 코스피/코스닥 전종목 일봉 (2일치) → 누적 +15% 필터
@@ -25,7 +25,7 @@
           'score': 87.3, 'price': 125000,
         },
         'theme_members_count': 4,   # 이 테마에서 같이 급등한 종목 수
-        'warning': '추격매수 위험 — 대장주 확인용. 매수는 눌림목 후 판단',
+        'warning': '',
       },
       ...
     ],
@@ -511,7 +511,7 @@ def run_surge_scan(crawler, log_fn=None):
             'leader': leader,
             'theme_members_count': len(members),
             'theme_members_names': [m['name'] for m in members_sorted[:5]],
-            'warning': '⚠️ 추격매수 위험 — 대장주 확인용. 매수는 눌림목 형성 후 판단하세요.',
+            'warning': '',
         })
 
     # 점수 높은 순 정렬
