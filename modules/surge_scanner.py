@@ -149,8 +149,12 @@ def _scan_surged_stocks(stock_mod, log_fn=None):
                 try:
                     df = _s.get_market_ohlcv(d, market=market)
                     if df is not None and not df.empty:
-                        # 주말/휴일 중복 방지: 직전 날짜와 종가 합 동일하면 스킵
                         cs = float(df['종가'].sum())
+                        # 휴장일 빈 데이터(종가합 0) 스킵
+                        if cs < 1.0:
+                            cur -= timedelta(days=1)
+                            continue
+                        # 주말/휴일 중복 방지: 직전 날짜와 종가 합 동일하면 스킵
                         if seen_close_sum is None or abs(cs - seen_close_sum) > 1.0:
                             date_list.append((d, df))
                             seen_close_sum = cs
