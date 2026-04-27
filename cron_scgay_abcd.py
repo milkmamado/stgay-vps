@@ -111,7 +111,7 @@ def main():
             # 알림 대상 phase 도달 + 아직 알림 안 보낸 경우
             if phase in ALERT_PHASES and it.get('last_alerted_phase') != phase:
                 stars = '⭐' * r.get('reliability_stars', 1)
-                surge = r.get('surge_pct', 0)
+                surge = r.get('surge_from_open_pct', 0)
                 msg = (
                     f"🚀 <b>{name}</b> ({code}) <b>{phase}</b> 확정!\n"
                     f"{stars}\n"
