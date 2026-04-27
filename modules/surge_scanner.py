@@ -143,17 +143,22 @@ def _scan_surged_stocks(stock_mod, log_fn=None):
             # date_to_close 사전 만들기
             date_list = []
             cur = today
-            for _ in range(15):
-                cur -= timedelta(days=1)
+            seen_close_sum = None
+            for _ in range(20):
                 d = cur.strftime('%Y%m%d')
                 try:
                     df = _s.get_market_ohlcv(d, market=market)
                     if df is not None and not df.empty:
-                        date_list.append((d, df))
-                        if len(date_list) >= 6:
-                            break
+                        # 주말/휴일 중복 방지: 직전 날짜와 종가 합 동일하면 스킵
+                        cs = float(df['종가'].sum())
+                        if seen_close_sum is None or abs(cs - seen_close_sum) > 1.0:
+                            date_list.append((d, df))
+                            seen_close_sum = cs
+                            if len(date_list) >= 6:
+                                break
                 except Exception:
-                    continue
+                    pass
+                cur -= timedelta(days=1)
         except Exception as e:
             if log_fn:
                 log_fn(f"  ⚠️ {market} 과거 일봉 수집 실패: {e}")
