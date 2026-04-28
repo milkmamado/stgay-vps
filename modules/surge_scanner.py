@@ -438,7 +438,7 @@ def _calc_scalping_levels(stock_mod, code, day_high, day_low, day_close):
 
 
 
-def run_surge_scan(crawler, log_fn=None):
+def _run_surge_scan_once(crawler, log_fn=None, min_theme_members_override=None):
     """
     메인 진입점. job.py가 호출.
     crawler: StockNewsCrawler 인스턴스 (인포스탁 캐시 공유 X — 호출자가 새 인스턴스 권장)
@@ -495,7 +495,7 @@ def run_surge_scan(crawler, log_fn=None):
     leaders = []
     for theme_name, group in theme_groups.items():
         members = group['members']
-        if len(members) < MIN_THEME_MEMBERS:
+        if len(members) < (min_theme_members_override if min_theme_members_override is not None else MIN_THEME_MEMBERS):
             continue
 
         # 점수 계산 후 1위 = 대장주
@@ -568,3 +568,30 @@ if __name__ == '__main__':
     result = run_surge_scan(StockNewsCrawler(), print)
     import json
     print(json.dumps(result, ensure_ascii=False, indent=2))
+
+# === AUTO_RELAX_RETRY: 손부장님 1회 분석 시 leaders 0이면 임계값 완화해서 재시도 ===
+def run_surge_scan(crawler, log_fn=None):
+    def _log(msg):
+        if log_fn: log_fn(msg)
+
+    result = _run_surge_scan_once(crawler, log_fn)
+    if result is None:
+        return None
+
+    leaders_count = len(result.get('leaders') or [])
+    total_surged = result.get('total_surged') or 0
+
+    # surge는 잡혔는데 leader 0 → 테마 필터 너무 빡셈 → 2명으로 완화 1회 재시도
+    if leaders_count == 0 and total_surged > 0:
+        _log(f"⚙️ leaders 0 (surge {total_surged}건) — MIN_THEME_MEMBERS 2로 완화 재시도")
+        result2 = _run_surge_scan_once(crawler, log_fn, min_theme_members_override=2)
+        if result2 and len(result2.get('leaders') or []) > 0:
+            result2['relaxed'] = True
+            if result2.get('config'):
+                result2['config']['min_theme_members'] = 2
+            _log(f"✅ 완화 재시도 성공 — {len(result2['leaders'])}개 대장주")
+            return result2
+        else:
+            _log("⚠️ 완화 재시도도 leaders 0 — 원본 결과 유지")
+
+    return result
