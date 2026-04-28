@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 SURGE_THRESHOLD_PCT = 15.0          # 1~2일 누적 등락률
 VOLUME_MULTIPLIER = 2.0             # 5일평균 거래대금 ×2배+
 MIN_MARKET_CAP_EOK = 300            # 최소 시총 300억
-MAX_MARKET_CAP_EOK = 50000          # 최대 시총 5조
+MAX_MARKET_CAP_EOK = 5000           # 최대 시총 5천억 (스캘핑 가능 범위)
 MIN_THEME_MEMBERS = 3               # 같은 테마 3종목+ 모여야 진짜 테마
 MAX_CONSECUTIVE_SURGE_DAYS = 3      # 3일 연속 급등 = 끝물 제외
 
